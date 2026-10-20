@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.invite">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – Invite</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+<script src="js/vendor/supabase-js-2.45.4.js"></script>
+</head>
+<body>
+<main class="main-content">
+  <section class="hero-section">
+    <div>
+      <p class="eyebrow"><a href="invites.html" style="color: inherit" data-i18n="invite.back"></a> · <span data-i18n="invite.eyebrow"></span></p>
+      <h1 id="pkgName">&nbsp;</h1>
+      <p id="pkgSub">&nbsp;</p>
+    </div>
+  </section>
+
+  <p class="auth-message error hidden" id="pageError" role="alert"></p>
+
+  <div class="bid-review-grid hidden" id="inviteGrid">
+    <div class="vp-col">
+      <div class="stats-grid">
+        <div class="stat-item"><p class="stat-label" data-i18n="stat.due"></p><p class="bid-stat-value" id="statDue"></p></div>
+        <div class="stat-item"><p class="stat-label" data-i18n="stat.walk"></p><p class="bid-stat-value" id="statWalk"></p></div>
+        <div class="stat-item"><p class="stat-label" data-i18n="stat.days"></p><p class="bid-stat-value" id="statDays"></p></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title" data-i18n="invite.scope"></h2></div>
+        <p class="auth-inline-copy" style="color: var(--text); white-space: pre-wrap" id="scope"></p>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title" data-i18n="invite.files"></h2></div>
+        <div class="bid-file-list" id="files"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><h2 class="card-title" data-i18n="invite.details"></h2></div>
+        <dl class="vp-detail-list" id="details"></dl>
+      </div>
+    </div>
+
+    <div class="card" style="align-self: start">
+      <div class="card-header"><h2 class="card-title" data-i18n="invite.response"></h2><span id="statusChip"></span></div>
+      <div id="responseBody"></div>
+    </div>
+  </div>
+</main>
+<script src="js/invite.js"></script>
+</body>
+</html>

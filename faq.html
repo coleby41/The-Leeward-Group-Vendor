@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.faq">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – FAQ</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+</head>
+<body>
+<div class="auth-page auth-page--login vp-auth-page vp-auth-page--wide">
+  <div class="auth-shell auth-shell--solo">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <div class="brand-mark">
+          <div class="brand-mark__icon">LG</div>
+          <div>
+            <div class="brand-title">The Leeward Group</div>
+            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
+          </div>
+        </div>
+      </div>
+
+      <h1 data-i18n="faq.title"></h1>
+      <p data-i18n="faq.intro"></p>
+
+      <div class="faq-list">
+        <details class="faq-item" open>
+          <summary data-i18n="faq.q1"></summary>
+          <div class="faq-body" data-i18n-html="faq.a1Html"></div>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="faq.q2"></summary>
+          <div class="faq-body" data-i18n-html="faq.a2Html"></div>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="faq.q3"></summary>
+          <div class="faq-body" data-i18n-html="faq.a3Html"></div>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="faq.q4"></summary>
+          <div class="faq-body" data-i18n-html="faq.a4Html"></div>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="faq.q5"></summary>
+          <div class="faq-body" data-i18n-html="faq.a5Html"></div>
+        </details>
+        <details class="faq-item">
+          <summary data-i18n="faq.q6"></summary>
+          <div class="faq-body" data-i18n-html="faq.a6Html"></div>
+        </details>
+      </div>
+
+      <p class="faq-disclaimer" data-i18n="faq.disclaimer"></p>
+
+      <div class="auth-options" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 18px">
+        <a href="index.html" class="auth-link" id="faqBack" data-i18n="faq.back"></a>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+// Signed in? "Back" goes to the portal instead of the sign-in page.
+if (VP.getSession()) {
+    const back = document.getElementById("faqBack");
+    back.href = "invites.html";
+    back.dataset.i18n = "faq.backPortal";
+    back.textContent = VP.t("faq.backPortal");
+}
+</script>
+</body>
+</html>

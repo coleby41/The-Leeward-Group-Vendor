@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.auth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+</head>
+<body>
+<div class="auth-page auth-page--login vp-auth-page vp-auth-page--narrow">
+  <div class="auth-shell auth-shell--solo">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <div class="brand-mark">
+          <div class="brand-mark__icon">LG</div>
+          <div>
+            <div class="brand-title">The Leeward Group</div>
+            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
+          </div>
+        </div>
+      </div>
+      <div id="working" class="vp-center">
+        <div class="vp-spinner" aria-hidden="true"></div>
+        <p data-i18n="auth.working"></p>
+      </div>
+      <div id="failed" class="hidden">
+        <h1 data-i18n="auth.failTitle"></h1>
+        <p id="failText"></p>
+        <a href="index.html" class="auth-button" style="display:block;text-align:center;text-decoration:none;color:#fff" data-i18n="auth.newLink"></a>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(async function () {
+    const token = new URLSearchParams(location.search).get("t") || "";
+    history.replaceState(null, "", location.pathname);
+    const res = token ? await VP.api("vendor-auth", "invite_login", { token }) : { ok: false, error: "link_invalid" };
+    if (res.ok && res.session) {
+        VP.setSession(res.session);
+        if (res.language) VP.setLang(res.language, { save: false });
+        location.replace(res.redirect_to || "invites.html");
+        return;
+    }
+    let code = res.error || "link_invalid";
+    const show = () => { document.getElementById("failText").textContent = VP.errText(code); };
+    show();
+    document.addEventListener("vp:lang", show);
+    document.getElementById("working").classList.add("hidden");
+    document.getElementById("failed").classList.remove("hidden");
+})();
+</script>
+</body>
+</html>

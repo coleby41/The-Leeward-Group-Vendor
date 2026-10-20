@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.pending">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – Waiting for approval</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+</head>
+<body>
+<div class="auth-page auth-page--login vp-auth-page">
+  <div class="auth-shell auth-shell--solo">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <div class="brand-mark">
+          <div class="brand-mark__icon">LG</div>
+          <div>
+            <div class="brand-title">The Leeward Group</div>
+            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="loading" class="vp-center"><div class="vp-spinner" aria-hidden="true"></div><p data-i18n="loading"></p></div>
+      <div id="content" class="hidden"></div>
+
+      <div class="auth-options" style="border-top: 1px solid var(--border); padding-top: 16px; margin-top: 20px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px">
+        <a href="faq.html" class="auth-link" data-i18n="pending.faq"></a>
+        <span style="display:flex;gap:16px;flex-wrap:wrap">
+          <button type="button" class="auth-link vp-linkbtn" id="checkBtn" data-i18n="pending.check"></button>
+          <button type="button" class="auth-link vp-linkbtn" id="signOutBtn" data-i18n="nav.signout"></button>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(async function () {
+    const $ = id => document.getElementById(id);
+    const esc = VP.esc;
+    $("signOutBtn").addEventListener("click", () => VP.signOut());
+    $("checkBtn").addEventListener("click", () => location.reload());
+
+    const data = await VP.requireMe({ allowPending: true });
+    if (data.error) { $("loading").innerHTML = `<p class="auth-message error">${esc(VP.errText(data.error))}</p>`; return; }
+    if (data.company) { location.replace("invites.html"); return; }
+
+    function render() {
+        const u = data.user;
+        const a = data.application;
+        const first = String(u.name || "").trim().split(/\s+/)[0] || "";
+        if (!a) {
+            $("content").innerHTML = `
+                <span class="chip chip--warning">${esc(VP.t("pending.chip"))}</span>
+                <h1 style="margin-top: 12px">${esc(VP.t("pending.memberTitle"))}</h1>
+                <p>${esc(VP.t("pending.memberBody"))}</p>`;
+        } else {
+            const address = [a.street, [a.city, a.state].filter(Boolean).join(", "), a.zip].filter(Boolean).join(" ");
+            const contact = [a.contact_name, a.contact_title, a.contact_phone].filter(Boolean).join(" · ");
+            const company = a.friendly_name && a.friendly_name !== a.legal_name ? `${a.legal_name} (${a.friendly_name})` : a.legal_name;
+            $("content").innerHTML = `
+                <span class="chip chip--warning">${esc(VP.t("pending.chip"))}</span>
+                <h1 style="margin-top: 12px">${esc(VP.t("pending.title", { name: first }))}</h1>
+                <p>${VP.tHtml("pending.bodyHtml", { email: u.email })}</p>
+                <ol class="pend-steps">
+                    <li class="pend-step is-done"><span class="pend-dot">✓</span><div><strong>${esc(VP.t("pending.step1"))}</strong><span>${esc(VP.fmtDateTime(a.created_at))}</span></div></li>
+                    <li class="pend-step is-current"><span class="pend-dot">2</span><div><strong>${esc(VP.t("pending.step2"))}</strong><span>${esc(VP.t("pending.step2sub"))}</span></div></li>
+                    <li class="pend-step"><span class="pend-dot">3</span><div><strong>${esc(VP.t("pending.step3"))}</strong><span>${esc(VP.t("pending.step3sub"))}</span></div></li>
+                </ol>
+                <div class="pend-summary">
+                    <p class="company-form-section-title">${esc(VP.t("pending.sent"))}</p>
+                    <dl class="vp-detail-list">
+                        <dt>${esc(VP.t("pending.company"))}</dt><dd>${esc(company)}</dd>
+                        <dt>${esc(VP.t("pending.address"))}</dt><dd>${esc(address)}</dd>
+                        <dt>${esc(VP.t("pending.contact"))}</dt><dd>${esc(contact)}</dd>
+                        <dt>${esc(VP.t("pending.w9"))}</dt><dd>${a.w9_on_file ? `<span class="chip chip--success">${esc(VP.t("pending.uploaded"))}</span>` : "—"}</dd>
+                    </dl>
+                    <p class="auth-inline-copy" style="margin-top: 10px">${esc(VP.t("pending.fix"))}</p>
+                </div>`;
+        }
+        $("loading").classList.add("hidden");
+        $("content").classList.remove("hidden");
+    }
+    render();
+    document.addEventListener("vp:lang", render);
+})();
+</script>
+</body>
+</html>

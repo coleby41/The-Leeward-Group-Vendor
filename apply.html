@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.apply">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – Apply</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+<script src="js/vendor/supabase-js-2.45.4.js"></script>
+</head>
+<body>
+<div class="auth-page auth-page--login vp-auth-page">
+  <div class="auth-shell auth-shell--solo">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <div class="brand-mark">
+          <div class="brand-mark__icon">LG</div>
+          <div>
+            <div class="brand-title">The Leeward Group</div>
+            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="applyForm">
+        <h1 data-i18n="apply.title"></h1>
+        <p data-i18n="apply.intro"></p>
+
+        <form class="auth-form" id="form" novalidate>
+          <label class="auth-field"><span data-i18n="apply.legal"></span><span class="auth-inline-copy vp-field-help" data-i18n="apply.legalHelp"></span><input type="text" name="legal_name" maxlength="200" data-i18n-ph="apply.legalPh" required></label>
+          <label class="auth-field"><span data-i18n="apply.friendly"></span><span class="auth-inline-copy vp-field-help" data-i18n="apply.friendlyHelp"></span><input type="text" name="friendly_name" maxlength="200" data-i18n-ph="apply.friendlyPh" required></label>
+          <label class="auth-field"><span data-i18n="apply.street"></span><input type="text" name="street" maxlength="200" autocomplete="street-address" required></label>
+          <div class="company-form-row">
+            <label class="auth-field"><span data-i18n="apply.city"></span><input type="text" name="city" maxlength="100" autocomplete="address-level2" required></label>
+            <label class="auth-field"><span data-i18n="apply.state"></span><input type="text" name="state" maxlength="2" placeholder="NC" autocomplete="address-level1" required></label>
+            <label class="auth-field"><span data-i18n="apply.zip"></span><input type="text" name="zip" maxlength="10" inputmode="numeric" autocomplete="postal-code" required></label>
+          </div>
+
+          <div class="wizard-field-grid">
+            <label class="auth-field"><span data-i18n="apply.name"></span><input type="text" name="contact_name" maxlength="120" autocomplete="name" required></label>
+            <label class="auth-field"><span data-i18n="apply.jobTitle"></span><input type="text" name="contact_title" maxlength="120" data-i18n-ph="apply.jobTitlePh" autocomplete="organization-title"></label>
+          </div>
+          <div class="wizard-field-grid">
+            <label class="auth-field"><span data-i18n="apply.email"></span><input type="email" name="contact_email" maxlength="200" autocomplete="email" inputmode="email" required></label>
+            <label class="auth-field"><span data-i18n="apply.phone"></span><input type="tel" name="contact_phone" maxlength="40" autocomplete="tel" required></label>
+          </div>
+
+          <label class="auth-field"><span data-i18n="apply.w9"></span><input type="file" name="w9" accept="application/pdf,.pdf" required></label>
+          <label class="auth-field"><span data-i18n="apply.tax"></span><span class="auth-inline-copy vp-field-help" data-i18n="apply.taxHelp"></span><input type="text" name="ssn_fid" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="XX-XXXXXXX" required></label>
+
+          <div class="auth-inline-copy vp-note-box" data-i18n-html="apply.coiNoteHtml"></div>
+          <label class="auth-field"><span data-i18n="apply.coiDate"></span><input type="date" name="coi_expires_on"></label>
+
+          <p class="auth-message hidden" id="applyMessage" role="alert"></p>
+          <button class="auth-button" type="submit" id="submitBtn" data-i18n="apply.submit"></button>
+        </form>
+      </div>
+
+      <div id="applyDone" class="hidden">
+        <h1 data-i18n="apply.doneTitle"></h1>
+        <p id="doneText"></p>
+        <a href="index.html" class="auth-link" data-i18n="apply.back"></a>
+      </div>
+
+      <div class="auth-footer" id="applyFooter">
+        <p class="auth-inline-copy" data-i18n-html="apply.footerHtml"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+    const $ = id => document.getElementById(id);
+    const form = $("form");
+    const REQUIRED = ["legal_name", "friendly_name", "street", "city", "state", "zip", "contact_name", "contact_email", "contact_phone", "w9", "ssn_fid"];
+    let uploaded = null; // { file, path } so a retry doesn't upload the W-9 twice
+    let doneEmail = "";
+
+    const value = name => (form.elements[name].value || "").trim();
+
+    function fail(code, fields) {
+        VP.markFields(form, fields);
+        VP.setMessage($("applyMessage"), VP.errText(code), "error");
+    }
+
+    form.addEventListener("submit", async e => {
+        e.preventDefault();
+        VP.setMessage($("applyMessage"), "");
+        const missing = REQUIRED.filter(n => (n === "w9" ? !form.elements.w9.files.length : !value(n)));
+        if (missing.length) return fail("missing_fields", missing);
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value("contact_email"))) return fail("bad_email", ["contact_email"]);
+        if (value("ssn_fid").replace(/[^0-9]/g, "").length !== 9) return fail("bad_tax_id", ["ssn_fid"]);
+        const file = form.elements.w9.files[0];
+        if (!/\.pdf$/i.test(file.name)) return fail("pdf_only", ["w9"]);
+        VP.markFields(form, []);
+
+        const btn = $("submitBtn");
+        btn.disabled = true;
+        try {
+            if (!uploaded || uploaded.file !== file) {
+                btn.textContent = VP.t("apply.uploading");
+                const slot = await VP.api("vendor-apply", "w9_upload_url", { file_name: file.name });
+                if (!slot.ok) return fail(slot.error, ["w9"]);
+                if (!(await VP.uploadToSlot(slot, file))) return fail("upload", ["w9"]);
+                uploaded = { file, path: slot.path };
+            }
+            btn.textContent = VP.t("apply.submitting");
+            const body = {
+                legal_name: value("legal_name"), friendly_name: value("friendly_name"),
+                street: value("street"), city: value("city"), state: value("state").toUpperCase(), zip: value("zip"),
+                contact_name: value("contact_name"), contact_title: value("contact_title"),
+                contact_email: value("contact_email"), contact_phone: value("contact_phone"),
+                ssn_fid: value("ssn_fid"), coi_expires_on: value("coi_expires_on") || null,
+                w9_path: uploaded.path, lang: VP.lang,
+            };
+            const res = await VP.api("vendor-apply", "submit", body);
+            if (!res.ok) {
+                if (res.error === "w9_missing") uploaded = null;
+                return fail(res.error, (res.fields || []).map(f => (f === "w9_path" ? "w9" : f)));
+            }
+            doneEmail = body.contact_email;
+            $("doneText").innerHTML = VP.tHtml("apply.doneHtml", { email: doneEmail });
+            $("applyForm").classList.add("hidden");
+            $("applyFooter").classList.add("hidden");
+            $("applyDone").classList.remove("hidden");
+            window.scrollTo(0, 0);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = VP.t("apply.submit");
+        }
+    });
+
+    document.addEventListener("vp:lang", () => {
+        if (doneEmail) $("doneText").innerHTML = VP.tHtml("apply.doneHtml", { email: doneEmail });
+    });
+})();
+</script>
+</body>
+</html>
