@@ -81,7 +81,7 @@
                 ${flash ? `<p class="auth-message ${flash.type}" role="status">${esc(flash.text)}</p>` : ""}
             </div>
             <div class="vendor-profile-section">
-                <p class="auth-inline-copy" style="margin:0">${esc(company)} <a class="auth-link" href="profile.html">${esc(t("project.goProfile"))}</a></p>
+                <p class="auth-inline-copy" style="margin:0">${esc(company)}</p>
             </div>`;
         flash = null;
         $("coiForm")?.addEventListener("submit", upload);

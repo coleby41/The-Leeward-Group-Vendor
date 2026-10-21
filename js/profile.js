@@ -243,14 +243,9 @@
                 <span class="company-card-label">${esc(t("docs.coiDateTitle"))}</span>
                 <div class="vp-doc-row">
                     ${coiChip(coi)}
-
                 </div>
-                ${openDoc === "coi" ? docForm("coi") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="coi">${esc(t("docs.updateDate"))}</button></div>`}
-                ${flashHtml("coi")}
-                <p class="auth-inline-copy">${esc(t("docs.coiNote"))}</p>
             </div>
-            <p class="auth-message hidden" id="docMessage" role="alert"></p>
-            <p class="auth-inline-copy">${esc(t("docs.note"))}</p>`;
+            <p class="auth-message hidden" id="docMessage" role="alert"></p>`;
         restore($("docForm"), keep);
     }
 
