@@ -256,6 +256,7 @@
             <div class="sidebar-header" data-i18n="nav.header"></div>
             <nav class="sidebar-nav">
                 <a href="invites.html" class="nav-item ${active === "invites" ? "active" : ""}"><span class="form-logs-nav-icon"></span><span class="nav-text" data-i18n="nav.invites"></span><span class="nav-item-badge hidden" id="navInviteBadge"></span></a>
+                <a href="projects.html" class="nav-item ${active === "projects" ? "active" : ""}"><span class="projects-nav-icon"></span><span class="nav-text" data-i18n="nav.projects"></span><span class="nav-item-badge hidden" id="navProjectBadge"></span></a>
                 <a href="profile.html" class="nav-item ${active === "profile" ? "active" : ""}"><span class="companies-nav-icon"></span><span class="nav-text" data-i18n="nav.profile"></span></a>
                 <a href="faq.html" class="nav-item ${active === "faq" ? "active" : ""}"><span class="docs-nav-icon"></span><span class="nav-text" data-i18n="nav.faq"></span></a>
             </nav>
@@ -304,9 +305,16 @@
             if (!data.ok) return;
             invites = data.invites;
         }
-        const n = invites.filter(i => (i.open && (i.status === "sent" || i.status === "viewed")) || i.coi_needed).length;
+        const n = invites.filter(i => i.open && (i.status === "sent" || i.status === "viewed")).length;
         badge.textContent = String(n);
         badge.classList.toggle("hidden", n === 0);
+        // Projects waiting on a COI PDF.
+        const pb = document.getElementById("navProjectBadge");
+        if (pb) {
+            const p = new Set(invites.filter(i => i.coi_needed).map(i => i.project_id)).size;
+            pb.textContent = String(p);
+            pb.classList.toggle("hidden", p === 0);
+        }
     }
 
     /* ---------- boot ---------- */

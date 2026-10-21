@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.project">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – Project</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+<script src="js/vendor/supabase-js-2.45.4.js"></script>
+</head>
+<body>
+<main class="main-content">
+  <section class="hero-section">
+    <div>
+      <p class="eyebrow"><a href="projects.html" style="color: inherit" data-i18n="project.back"></a> · <span data-i18n="project.eyebrow"></span></p>
+      <h1 id="projName">&nbsp;</h1>
+      <p id="projSub">&nbsp;</p>
+    </div>
+  </section>
+
+  <p class="auth-message error hidden" id="pageError" role="alert"></p>
+
+  <div class="bid-review-grid hidden" id="projectGrid">
+    <div class="vp-col">
+      <div class="card">
+        <div class="card-header"><h2 class="card-title" data-i18n="project.scopes"></h2></div>
+        <div id="scopesBody"></div>
+      </div>
+    </div>
+
+    <div class="card" style="align-self: start">
+      <div class="card-header"><h2 class="card-title" data-i18n="project.docs"></h2><span id="coiChip"></span></div>
+      <div class="vendor-profile-body" id="docsBody"></div>
+    </div>
+  </div>
+</main>
+<script src="js/project.js"></script>
+</body>
+</html>

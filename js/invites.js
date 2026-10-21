@@ -66,7 +66,7 @@
                     <td>${esc(VP.fmtDay(inv.due_at, false))}</td>
                     <td>${responseChip(inv)}</td>
                     <td><div class="bid-row-actions">${inv.coi_needed
-                        ? `<a href="${link(inv)}" class="auth-button auth-button--sm" style="text-decoration:none;color:#fff">${esc(t("coi.upload"))}</a>`
+                        ? `<a href="project.html?id=${encodeURIComponent(inv.project_id)}" class="auth-button auth-button--sm" style="text-decoration:none;color:#fff">${esc(t("coi.upload"))}</a>`
                         : `<a href="${link(inv)}" class="workbook-btn" style="text-decoration:none">${esc(t("btn.view"))}</a>`}</div></td>
                 </tr>`).join("")}</tbody>
               </table>

@@ -215,13 +215,13 @@
     function docForm(kind) {
         return `
             <form class="auth-form vp-doc-form" id="docForm" data-kind="${kind}" novalidate>
-                <label class="auth-field">${esc(t(kind === "coi" ? "docs.coiPdf" : "docs.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>
+                ${kind === "coi" ? "" : `<label class="auth-field">${esc(t("docs.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>`}
                 ${kind === "coi"
                     ? `<label class="auth-field">${esc(t("docs.newExp"))}<input type="date" name="expires_on" value="${esc(prof.company.coi.expires_on || "")}"></label>`
                     : `<label class="auth-field">${esc(t("docs.newTax"))}<input type="text" name="ssn_fid" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="XX-XXXXXXX"></label>`}
                 <div class="popup-buttons">
                     <button type="button" class="auth-button auth-button--secondary" data-doc-cancel>${esc(t("cancel"))}</button>
-                    <button type="submit" class="auth-button" id="docUploadBtn">${esc(t("docs.upload"))}</button>
+                    <button type="submit" class="auth-button" id="docUploadBtn">${esc(t(kind === "coi" ? "save" : "docs.upload"))}</button>
                 </div>
             </form>`;
     }
@@ -240,12 +240,12 @@
                 ${flashHtml("w9")}
             </div>
             <div class="vendor-profile-section">
-                <span class="company-card-label">${esc(t("docs.coi"))}</span>
+                <span class="company-card-label">${esc(t("docs.coiDateTitle"))}</span>
                 <div class="vp-doc-row">
                     ${coiChip(coi)}
-                    ${coi.on_file ? `<button type="button" class="workbook-btn" data-doc-view="coi" style="margin-left:auto">${esc(t("docs.view"))}</button>` : `<span class="auth-inline-copy">${esc(t("docs.noPdf"))}</span>`}
+
                 </div>
-                ${openDoc === "coi" ? docForm("coi") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="coi">${esc(t("docs.uploadCoi"))}</button></div>`}
+                ${openDoc === "coi" ? docForm("coi") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="coi">${esc(t("docs.updateDate"))}</button></div>`}
                 ${flashHtml("coi")}
                 <p class="auth-inline-copy">${esc(t("docs.coiNote"))}</p>
             </div>
@@ -272,7 +272,7 @@
         e.preventDefault();
         const f = e.target;
         const kind = f.dataset.kind;
-        const file = f.elements.file.files[0];
+        const file = f.elements.file ? f.elements.file.files[0] : null;
         const missing = [];
         if (!file && kind !== "coi") missing.push("file");
         if (kind === "coi" && !f.elements.expires_on.value) missing.push("expires_on");
@@ -284,7 +284,7 @@
         VP.setMessage($("docMessage"), "");
 
         const btn = $("docUploadBtn");
-        btn.disabled = true; btn.textContent = t("docs.uploading");
+        btn.disabled = true; btn.textContent = t(kind === "coi" ? "saving" : "docs.uploading");
         try {
             if (kind === "coi" && !file) {
                 // Date only — that's all approval needs.
@@ -310,7 +310,7 @@
             renderDocs();
             renderCompany();
         } finally {
-            if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = t("docs.upload"); }
+            if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = t(kind === "coi" ? "save" : "docs.upload"); }
         }
     });
 

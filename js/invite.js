@@ -88,56 +88,20 @@
             </div>`;
     }
 
-    // Awarded: Leeward asks for the COI PDF (one COI covers every project).
+    // Awarded: the COI PDF goes in the project's folder (My Projects).
     function coiHtml(inv) {
         if (inv.status !== "awarded" || !inv.coi) return "";
+        const href = `project.html?id=${encodeURIComponent(state.project.id)}`;
         if (inv.coi.received_at) {
-            return `<div class="vp-current-bid" style="margin-top:14px"><span class="company-card-label">${esc(t("coi.title"))}</span>
-                <p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("coi.received", { date: VP.fmtDay(inv.coi.received_at) }))}</p></div>`;
+            return `<div class="vp-current-bid" style="margin-top:14px"><span class="company-card-label">${esc(t("project.coiTitle"))}</span>
+                <p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("coi.received", { date: VP.fmtDay(inv.coi.received_at) }))} <a class="auth-link" href="${href}">${esc(t("btn.openFolder"))} ›</a></p></div>`;
         }
-        const exp = state.company_coi && state.company_coi.expires_on ? state.company_coi.expires_on : "";
         return `
-            <form class="auth-form vp-doc-form" id="coiForm" style="margin-top: 16px" novalidate>
-                <p class="company-form-section-title" style="margin:0">${esc(t("coi.title"))}</p>
-                <p class="auth-inline-copy" style="margin:0">${esc(t("coi.body"))}</p>
-                <label class="auth-field">${esc(t("coi.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>
-                <label class="auth-field">${esc(t("coi.date"))}<input type="date" name="expires_on" value="${esc(exp)}"></label>
-                <p class="auth-message hidden" id="coiMessage" role="alert"></p>
-                <button type="submit" class="auth-button" id="coiUploadBtn">${esc(t("coi.upload"))}</button>
-            </form>`;
-    }
-
-    async function uploadCoi(e) {
-        e.preventDefault();
-        if (busy) return;
-        const form = e.target;
-        const msg = $("coiMessage");
-        const file = form.elements.file.files[0];
-        const expires = form.elements.expires_on.value;
-        const missing = [];
-        if (!file) missing.push("file");
-        if (!expires) missing.push("expires_on");
-        if (missing.length) { VP.markFields(form, missing); VP.setMessage(msg, VP.errText(missing[0] === "file" ? "missing_file" : "missing_fields"), "error"); return; }
-        if (!/\.pdf$/i.test(file.name)) { VP.markFields(form, ["file"]); VP.setMessage(msg, VP.errText("pdf_only"), "error"); return; }
-        VP.markFields(form, []);
-        busy = true;
-        const btn = $("coiUploadBtn");
-        btn.disabled = true; btn.textContent = t("docs.uploading");
-        try {
-            const slot = await VP.api("vendor-api", "doc_upload_url", { kind: "coi", file_name: file.name });
-            if (!slot.ok) { VP.setMessage(msg, VP.errText(slot.error), "error"); return; }
-            if (!(await VP.uploadToSlot(slot, file))) { VP.setMessage(msg, VP.errText("upload"), "error"); return; }
-            const res = await VP.api("vendor-api", "save_doc", { kind: "coi", path: slot.path, expires_on: expires });
-            if (!res.ok) { VP.markFields(form, res.fields || []); VP.setMessage(msg, VP.errText(res.error), "error"); return; }
-            await load();
-            flash = { text: t("coi.done"), type: "success" };
-            renderResponse();
-            flash = null;
-            VP.refreshInviteBadge();
-        } finally {
-            busy = false;
-            if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = t("coi.upload"); }
-        }
+            <div class="vp-doc-form" style="margin-top: 16px">
+                <p class="company-form-section-title" style="margin:0 0 6px">${esc(t("coi.title"))}</p>
+                <p class="auth-inline-copy" style="margin:0 0 12px">${esc(t("coi.folderBody"))}</p>
+                <a href="${href}" class="auth-button" style="display:block;text-align:center;text-decoration:none;color:#fff">${esc(t("coi.goFolder"))}</a>
+            </div>`;
     }
 
     function renderResponse(keep) {
@@ -148,7 +112,6 @@
         if (!pkg.can_bid) {
             const msg = inv.status === "awarded" ? t("closed.awarded") : inv.status === "not_selected" ? t("closed.not_selected") : t("closed.past");
             $("responseBody").innerHTML = `${currentBidHtml(inv)}<p class="auth-inline-copy vp-closed-note">${esc(msg)}</p>${coiHtml(inv)}${flashHtml}`;
-            $("coiForm")?.addEventListener("submit", uploadCoi);
             return;
         }
 
