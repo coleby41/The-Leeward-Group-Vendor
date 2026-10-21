@@ -202,10 +202,10 @@
     });
 
     /* ---------- documents ---------- */
+    // The COI date is what counts; the PDF is only asked for when awarded.
     function coiChip(coi) {
-        if (coi.exempt && !coi.on_file) return `<span class="chip chip--muted">${esc(t("docs.exempt"))}</span>`;
-        if (!coi.on_file) return `<span class="chip chip--danger">${esc(t("docs.missing"))}</span>`;
-        if (!coi.expires_on) return `<span class="chip chip--success">${esc(t("docs.onFile"))}</span>`;
+        if (coi.exempt && !coi.expires_on) return `<span class="chip chip--muted">${esc(t("docs.exempt"))}</span>`;
+        if (!coi.expires_on) return `<span class="chip chip--danger">${esc(t("docs.noDate"))}</span>`;
         const exp = new Date(`${coi.expires_on}T23:59:59`);
         const days = (exp.getTime() - Date.now()) / 86400000;
         if (days < 0) return `<span class="chip chip--danger">${esc(t("docs.expired", { date: VP.fmtDay(coi.expires_on) }))}</span>`;
@@ -215,9 +215,9 @@
     function docForm(kind) {
         return `
             <form class="auth-form vp-doc-form" id="docForm" data-kind="${kind}" novalidate>
-                <label class="auth-field">${esc(t("docs.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>
+                <label class="auth-field">${esc(t(kind === "coi" ? "docs.coiPdf" : "docs.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>
                 ${kind === "coi"
-                    ? `<label class="auth-field">${esc(t("docs.newExp"))}<input type="date" name="expires_on"></label>`
+                    ? `<label class="auth-field">${esc(t("docs.newExp"))}<input type="date" name="expires_on" value="${esc(prof.company.coi.expires_on || "")}"></label>`
                     : `<label class="auth-field">${esc(t("docs.newTax"))}<input type="text" name="ssn_fid" maxlength="20" inputmode="numeric" autocomplete="off" placeholder="XX-XXXXXXX"></label>`}
                 <div class="popup-buttons">
                     <button type="button" class="auth-button auth-button--secondary" data-doc-cancel>${esc(t("cancel"))}</button>
@@ -243,7 +243,7 @@
                 <span class="company-card-label">${esc(t("docs.coi"))}</span>
                 <div class="vp-doc-row">
                     ${coiChip(coi)}
-                    ${coi.on_file ? `<button type="button" class="workbook-btn" data-doc-view="coi" style="margin-left:auto">${esc(t("docs.view"))}</button>` : ""}
+                    ${coi.on_file ? `<button type="button" class="workbook-btn" data-doc-view="coi" style="margin-left:auto">${esc(t("docs.view"))}</button>` : `<span class="auth-inline-copy">${esc(t("docs.noPdf"))}</span>`}
                 </div>
                 ${openDoc === "coi" ? docForm("coi") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="coi">${esc(t("docs.uploadCoi"))}</button></div>`}
                 ${flashHtml("coi")}
@@ -274,10 +274,10 @@
         const kind = f.dataset.kind;
         const file = f.elements.file.files[0];
         const missing = [];
-        if (!file) missing.push("file");
+        if (!file && kind !== "coi") missing.push("file");
         if (kind === "coi" && !f.elements.expires_on.value) missing.push("expires_on");
         if (missing.length) { VP.markFields(f, missing); VP.setMessage($("docMessage"), VP.errText(missing[0] === "file" ? "missing_file" : "missing_fields"), "error"); return; }
-        if (!/\.pdf$/i.test(file.name)) { VP.markFields(f, ["file"]); VP.setMessage($("docMessage"), VP.errText("pdf_only"), "error"); return; }
+        if (file && !/\.pdf$/i.test(file.name)) { VP.markFields(f, ["file"]); VP.setMessage($("docMessage"), VP.errText("pdf_only"), "error"); return; }
         const taxId = kind === "w9" ? f.elements.ssn_fid.value.trim() : "";
         if (taxId && taxId.replace(/[^0-9]/g, "").length !== 9) { VP.markFields(f, ["ssn_fid"]); VP.setMessage($("docMessage"), VP.errText("bad_tax_id"), "error"); return; }
         VP.markFields(f, []);
@@ -286,6 +286,16 @@
         const btn = $("docUploadBtn");
         btn.disabled = true; btn.textContent = t("docs.uploading");
         try {
+            if (kind === "coi" && !file) {
+                // Date only — that's all approval needs.
+                const res = await VP.api("vendor-api", "set_coi_date", { expires_on: f.elements.expires_on.value });
+                if (!res.ok) { VP.markFields(f, res.fields || []); VP.setMessage($("docMessage"), VP.errText(res.error), "error"); return; }
+                openDoc = null;
+                await load();
+                flashes.coi = { text: t("docs.dateSaved"), type: "success" };
+                renderDocs();
+                return;
+            }
             const slot = await VP.api("vendor-api", "doc_upload_url", { kind, file_name: file.name });
             if (!slot.ok) { VP.setMessage($("docMessage"), VP.errText(slot.error), "error"); return; }
             if (!(await VP.uploadToSlot(slot, file))) { VP.setMessage($("docMessage"), VP.errText("upload"), "error"); return; }

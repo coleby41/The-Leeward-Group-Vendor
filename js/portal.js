@@ -304,7 +304,7 @@
             if (!data.ok) return;
             invites = data.invites;
         }
-        const n = invites.filter(i => i.open && (i.status === "sent" || i.status === "viewed")).length;
+        const n = invites.filter(i => (i.open && (i.status === "sent" || i.status === "viewed")) || i.coi_needed).length;
         badge.textContent = String(n);
         badge.classList.toggle("hidden", n === 0);
     }
