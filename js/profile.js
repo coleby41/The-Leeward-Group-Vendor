@@ -234,11 +234,11 @@
             <div class="vendor-profile-section">
                 <span class="company-card-label">${esc(t("docs.w9"))}</span>
                 <div class="vp-doc-row">
-                    ${w9.on_file ? `<span class="chip chip--success">${esc(t("docs.onFile"))}</span>` : `<span class="chip chip--danger">${esc(t("docs.missing"))}</span>`}
+                    ${w9.on_file ? `<span class="chip chip--success">${esc(t("docs.onFile"))}</span>` : w9.exempt ? `<span class="chip chip--muted">${esc(t("docs.exempt"))}</span>` : `<span class="chip chip--danger">${esc(t("docs.missing"))}</span>`}
                     ${w9.updated_at ? `<span class="auth-inline-copy">${esc(t("docs.updated", { date: VP.fmtDay(w9.updated_at) }))}</span>` : ""}
                     ${w9.on_file ? `<button type="button" class="workbook-btn" data-doc-view="w9" style="margin-left:auto">${esc(t("docs.view"))}</button>` : ""}
                 </div>
-                ${openDoc === "w9" ? docForm("w9") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="w9">${esc(t("docs.uploadW9"))}</button></div>`}
+                ${w9.exempt && !w9.on_file ? "" : openDoc === "w9" ? docForm("w9") : `<div class="bid-file-add-row"><button type="button" class="bid-file-add-btn" data-doc-open="w9">${esc(t("docs.uploadW9"))}</button></div>`}
                 ${flashHtml("w9")}
             </div>
             <div class="vendor-profile-section">
