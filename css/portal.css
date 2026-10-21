@@ -140,3 +140,10 @@ body { background: var(--bg); }
 /* phones: keep the brand readable, and the hint stops showing once a language has been picked */
 @media (max-width: 560px) { .header .header-user-pill { display: none; } }
 .lang-fab.is-picked .lang-fab__hint { display: none; }
+
+/* Let sign-in / form pages scroll. styles.css sets body { overflow: hidden }
+   for the dashboard layout and undoes it via .auth-page on <body> — but the
+   vendor pages put .auth-page on a wrapper div, so tall pages were clipped
+   with no way to scroll on wider windows. */
+html:has(body > .auth-page), body:has(> .auth-page) { height: auto; }
+body:has(> .auth-page) { overflow-x: hidden; overflow-y: auto; }
