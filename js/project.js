@@ -49,25 +49,34 @@
             </div>`;
     }
 
+    // A project's COI is either on file or not.
     function chip() {
         const c = state.project.coi;
-        if (c.file && !c.needed) return `<span class="chip chip--success">${esc(t("coiStatus.received"))}</span>`;
-        if (c.needed) return `<span class="chip chip--warning">${esc(t("coiStatus.needed"))}</span>`;
+        if (c.file) return `<span class="chip chip--success">${esc(t("coiStatus.onFile"))}</span>`;
         if (state.company_coi.exempt) return `<span class="chip chip--muted">${esc(t("coiStatus.exempt"))}</span>`;
-        return `<span class="chip chip--muted">${esc(t("coiStatus.notRequested"))}</span>`;
+        return `<span class="chip chip--warning">${esc(t("coiStatus.notOnFile"))}</span>`;
     }
 
     function renderDocs() {
         const c = state.project.coi;
+        const tpl = state.project.coi_template;
         const exempt = state.company_coi.exempt && !c.needed;
         const company = state.company_coi.expires_on
             ? t("project.companyDate", { date: VP.fmtDay(state.company_coi.expires_on) })
             : t("project.companyNoDate");
         $("coiChip").innerHTML = chip();
         $("docsBody").innerHTML = `
+            ${exempt ? "" : `<div class="vendor-profile-section">
+                <span class="company-card-label">${esc(t("project.templateTitle"))}</span>
+                ${tpl ? `<p class="auth-inline-copy" style="margin:4px 0 8px">${esc(t("project.templateBody"))}</p>
+                <div class="bid-file-row">
+                    <span class="bid-file-row-name">${esc(tpl.name)}</span>
+                    <button type="button" class="workbook-btn workbook-btn--download" style="flex:0 0 auto" data-file="${esc(tpl.id)}">${esc(t("project.templateDownload"))}</button>
+                </div>` : `<p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("project.noTemplate"))}</p>`}
+            </div>`}
             <div class="vendor-profile-section">
                 <span class="company-card-label">${esc(t("project.coiTitle"))}</span>
-                <p class="auth-inline-copy" style="margin:4px 0 8px">${esc(exempt ? t("project.coiExempt") : c.needed ? t("project.coiNeeded") : c.file ? "" : t("project.coiNotRequested"))}</p>
+                <p class="auth-inline-copy" style="margin:4px 0 8px">${esc(exempt ? t("project.coiExempt") : c.file ? "" : t("project.coiNeeded"))}</p>
                 ${c.file ? `
                 <div class="bid-file-row">
                     <span class="bid-file-row-name">${esc(c.file.name)}<span class="bid-cell-sub">${esc(t("project.coiUploaded", { date: VP.fmtDay(c.file.uploaded_at) }))}</span></span>

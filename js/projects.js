@@ -12,11 +12,11 @@
     let projects = null;
     let exempt = false;
 
+    // A project's COI is either on file or not.
     function coiChip(p) {
-        if (p.coi.file && !p.coi.needed) return `<span class="chip chip--success">${esc(t("coiStatus.received"))}</span>`;
-        if (p.coi.needed) return `<span class="chip chip--warning">${esc(t("coiStatus.needed"))}</span>`;
+        if (p.coi.file) return `<span class="chip chip--success">${esc(t("coiStatus.onFile"))}</span>`;
         if (exempt) return `<span class="chip chip--muted">${esc(t("coiStatus.exempt"))}</span>`;
-        return `<span class="chip chip--muted">${esc(t("coiStatus.notRequested"))}</span>`;
+        return `<span class="chip chip--warning">${esc(t("coiStatus.notOnFile"))}</span>`;
     }
 
     function render() {
