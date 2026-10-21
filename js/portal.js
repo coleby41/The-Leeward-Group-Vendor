@@ -208,13 +208,29 @@
     /* ---------- signed-in shell ---------- */
     let me = null;
 
+    // Who's signed in. The answer is cached for this browser tab session so
+    // the header/sidebar draw instantly on every page; it's refreshed in the
+    // background (and a signed-out session still sends them to sign in).
+    function readMeCache() {
+        try {
+            const c = JSON.parse(window.sessionStorage.getItem("vp-me") || "null");
+            return c && c.session === getSession() && c.data && c.data.ok ? c.data : null;
+        } catch (e) { return null; }
+    }
+    function writeMeCache(data) {
+        try { window.sessionStorage.setItem("vp-me", JSON.stringify({ session: getSession(), data })); } catch (e) { /* ignore */ }
+    }
+
     async function requireMe({ allowPending = false } = {}) {
         if (!getSession()) {
             const next = encodeURIComponent(location.pathname.split("/").pop() + location.search);
             location.replace(`index.html?next=${next}`);
             return new Promise(() => {});
         }
-        const data = await api("vendor-api", "me");
+        const cached = readMeCache();
+        const fresh = api("vendor-api", "me").then(d => { if (d && d.ok) writeMeCache(d); return d; });
+        // Waiting-for-approval vendors always re-check, so approval shows up right away.
+        const data = cached && cached.company ? cached : await fresh;
         if (!data.ok) return { error: data.error };
         me = data;
         if (!data.company && !allowPending) {
@@ -227,6 +243,7 @@
     async function signOut() {
         const token = getSession();
         setSession(null);
+        try { window.sessionStorage.removeItem("vp-me"); } catch (e) { /* ignore */ }
         if (token) await api("vendor-auth", "sign_out", { session: token });
         location.replace("index.html");
     }
@@ -329,7 +346,10 @@
     window.VP = {
         t, tHtml, esc, applyI18n, setLang, get lang() { return lang; },
         api, errText, uploadToSlot, setMessage, markFields,
-        getSession, setSession, requireMe, renderShell, refreshInviteBadge, signOut,
+        getSession, setSession, requireMe,
+        // True when this tab already knows the vendor is approved, so a page can
+        // fetch its data in parallel with requireMe() instead of after it.
+        approvedCached: () => Boolean(readMeCache()?.company), renderShell, refreshInviteBadge, signOut,
         get me() { return me; },
         fmtDateTime, fmtShort, fmtDay, fmtMoney, daysLeft, daysLeftText,
         store,

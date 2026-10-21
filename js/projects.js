@@ -4,6 +4,7 @@
     const $ = id => document.getElementById(id);
     const { t, esc } = VP;
 
+    const firstLoad = VP.approvedCached() ? VP.api("vendor-api", "projects") : null; // in parallel with requireMe
     const data = await VP.requireMe();
     if (data.error) { $("projectsBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(data.error))}</p>`; return; }
     VP.renderShell("projects");
@@ -48,7 +49,7 @@
             </div>` : `<p class="auth-inline-copy">${esc(t("projects.empty"))}</p>`;
     }
 
-    const res = await VP.api("vendor-api", "projects");
+    const res = await (firstLoad || VP.api("vendor-api", "projects"));
     if (!res.ok) { $("projectsBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(res.error))}</p>`; return; }
     projects = res.projects;
     exempt = res.coi_exempt;

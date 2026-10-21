@@ -4,6 +4,7 @@
     const $ = id => document.getElementById(id);
     const { t, esc } = VP;
 
+    let prefetch = VP.approvedCached() ? VP.api("vendor-api", "profile") : null; // in parallel with requireMe
     const me = await VP.requireMe();
     if (me.error) return pageError(me.error);
     VP.renderShell("profile");
@@ -20,7 +21,8 @@
     }
 
     async function load() {
-        const res = await VP.api("vendor-api", "profile");
+        const res = prefetch ? await prefetch : await VP.api("vendor-api", "profile");
+        prefetch = null;
         if (!res.ok) { pageError(res.error); return false; }
         prof = res;
         return true;

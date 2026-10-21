@@ -5,6 +5,7 @@
     const { t, esc } = VP;
     const id = new URLSearchParams(location.search).get("id") || "";
 
+    let prefetch = VP.approvedCached() ? VP.api("vendor-api", "invite", { id }) : null; // in parallel with requireMe
     const me = await VP.requireMe();
     if (me.error) return showError(me.error);
     VP.renderShell("invites");
@@ -21,7 +22,8 @@
     }
 
     async function load() {
-        const res = await VP.api("vendor-api", "invite", { id });
+        const res = prefetch ? await prefetch : await VP.api("vendor-api", "invite", { id });
+        prefetch = null;
         if (!res.ok) { showError(res.error); return false; }
         state = res;
         const s = res.invite.status;
