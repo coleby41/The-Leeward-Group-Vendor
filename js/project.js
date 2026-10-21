@@ -107,6 +107,11 @@
         if (!file) { VP.markFields(form, ["file"]); VP.setMessage(msg, VP.errText("missing_file"), "error"); return; }
         if (!/\.pdf$/i.test(file.name)) { VP.markFields(form, ["file"]); VP.setMessage(msg, VP.errText("pdf_only"), "error"); return; }
         VP.markFields(form, []);
+        VP.setMessage(msg, "");
+        // Ask about the expiration date first (same as on file, or a new one).
+        const answer = await askExpiration();
+        if (!answer) return;
+
         busy = true;
         const btn = $("coiUploadBtn");
         btn.disabled = true; btn.textContent = t("docs.uploading");
@@ -116,14 +121,96 @@
             if (!(await VP.uploadToSlot(slot, file))) { VP.setMessage(msg, VP.errText("upload"), "error"); return; }
             const res = await VP.api("vendor-api", "save_project_coi", { project_id: id, path: slot.path, file_name: file.name });
             if (!res.ok) { VP.setMessage(msg, VP.errText(res.error), "error"); return; }
+            let dateChanged = false;
+            if (answer.date && answer.date !== state.company_coi.expires_on) {
+                const d = await VP.api("vendor-api", "set_coi_date", { expires_on: answer.date });
+                if (!d.ok) { VP.setMessage(msg, VP.errText(d.error), "error"); return; }
+                dateChanged = true;
+            }
             await load();
-            flash = { text: t("project.coiDone"), type: "success" };
+            flash = { text: t(dateChanged ? "coiPop.dateSaved" : "project.coiDone"), type: "success" };
             renderDocs();
             VP.refreshInviteBadge();
         } finally {
             busy = false;
             if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = t(state.project.coi.file ? "project.coiReplace" : "project.coiUpload"); }
         }
+    }
+
+    // Popup: is this COI's expiration date the same as the one on file? The
+    // date can be changed right here. Resolves { date } or null (cancelled).
+    function askExpiration() {
+        return new Promise(resolve => {
+            const onFile = state.company_coi.expires_on || "";
+            let choice = onFile ? "same" : "different";
+            const overlay = document.createElement("div");
+            overlay.className = "popup-overlay";
+            overlay.id = "coiDateOverlay";
+            overlay.innerHTML = `
+                <div class="popup workbook-popup" role="dialog" aria-modal="true" aria-labelledby="coiDateTitle">
+                    <h2 id="coiDateTitle">${esc(t("coiPop.title"))}</h2>
+                    <form class="auth-form" id="coiDateForm" novalidate>
+                        ${onFile ? `
+                        <p class="auth-inline-copy" style="margin:0">${esc(t("coiPop.ask"))}</p>
+                        <p style="margin:0;font-weight:700">${esc(t("coiPop.onFile", { date: VP.fmtDay(onFile) }))}</p>
+                        <div class="bid-choice-group" role="radiogroup" aria-label="${esc(t("coiPop.ask"))}">
+                            <button type="button" role="radio" class="bid-choice-btn" data-pick="same">${esc(t("coiPop.same"))}</button>
+                            <button type="button" role="radio" class="bid-choice-btn" data-pick="different">${esc(t("coiPop.different"))}</button>
+                        </div>` : `<p class="auth-inline-copy" style="margin:0">${esc(t("coiPop.noDate"))}</p>`}
+                        <label class="auth-field" id="coiDateField">${esc(t("coiPop.date"))}
+                            <input type="date" name="expires_on" value="${esc(onFile)}">
+                        </label>
+                        <p class="auth-message hidden" id="coiDateMessage" role="alert"></p>
+                        <div class="popup-buttons">
+                            <button type="button" class="auth-button auth-button--secondary" data-pop="cancel">${esc(t("cancel"))}</button>
+                            <button type="submit" class="auth-button">${esc(t("coiPop.confirm"))}</button>
+                        </div>
+                    </form>
+                </div>`;
+            document.body.appendChild(overlay);
+            document.body.classList.add("popup-active");
+            const form = overlay.querySelector("#coiDateForm");
+            const input = form.elements.expires_on;
+            const sync = () => {
+                overlay.querySelectorAll("[data-pick]").forEach(b => {
+                    const on = b.dataset.pick === choice;
+                    b.classList.toggle("is-selected", on);
+                    b.setAttribute("aria-checked", String(on));
+                });
+                overlay.querySelector("#coiDateField").classList.toggle("hidden", choice === "same");
+            };
+            const close = result => {
+                overlay.remove();
+                if (!document.querySelector(".popup-overlay:not(.hidden)")) document.body.classList.remove("popup-active");
+                document.removeEventListener("keydown", onKey);
+                resolve(result);
+            };
+            const onKey = ev => { if (ev.key === "Escape") close(null); };
+            input.addEventListener("input", () => { VP.markFields(form, []); VP.setMessage(overlay.querySelector("#coiDateMessage"), ""); });
+            document.addEventListener("keydown", onKey);
+            overlay.addEventListener("click", ev => {
+                if (ev.target === overlay || ev.target.closest('[data-pop="cancel"]')) { close(null); return; }
+                const pick = ev.target.closest("[data-pick]");
+                if (pick) {
+                    choice = pick.dataset.pick;
+                    if (choice === "different") { if (input.value === onFile) input.value = ""; sync(); input.focus(); }
+                    else { input.value = onFile; sync(); }
+                }
+            });
+            form.addEventListener("submit", ev => {
+                ev.preventDefault();
+                if (choice === "same") { close({ date: onFile }); return; }
+                const v = input.value;
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+                    VP.markFields(form, ["expires_on"]);
+                    VP.setMessage(overlay.querySelector("#coiDateMessage"), VP.errText("missing_fields"), "error");
+                    return;
+                }
+                close({ date: v });
+            });
+            sync();
+            (choice === "same" ? overlay.querySelector('[data-pick="same"]') : input).focus();
+        });
     }
 
     async function openFile(fileId, download) {
