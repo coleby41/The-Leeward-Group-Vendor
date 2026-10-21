@@ -252,17 +252,17 @@
     }
 
     /* ---------- files ---------- */
-    async function openFile(fileId, download) {
-        // Open the tab now (before the await) so pop-up blockers allow it.
-        const win = download ? null : window.open("", "_blank");
-        const res = await VP.api("vendor-api", "file_url", { invite_id: id, file_id: fileId, download });
-        if (!res.ok || !res.url) { if (win) win.close(); message(VP.errText(res.error || "generic"), "error"); return; }
-        if (download) {
-            const a = document.createElement("a");
-            a.href = res.url; a.rel = "noopener"; a.target = "_blank"; a.download = res.name || "";
-            document.body.appendChild(a); a.click(); a.remove();
-        } else if (win) { win.opener = null; win.location.href = res.url; }
-        else location.href = res.url;
+    // View opens in the portal's preview; Download saves it. Never a new tab.
+    function openFile(fileId, download) {
+        const f = (state.files || []).find(x => String(x.id) === String(fileId));
+        const name = f ? f.name : state.invite.proposal && String(state.invite.proposal.id) === String(fileId) ? state.invite.proposal.file_name : "";
+        const sign = async dl => {
+            const res = await VP.api("vendor-api", "file_url", { invite_id: id, file_id: fileId, download: dl });
+            if (!res.ok || !res.url) throw new Error(res.error || "generic");
+            return res.url;
+        };
+        if (!download) { VP.preview({ name, getUrl: () => sign(false), getDownloadUrl: () => sign(true) }); return; }
+        sign(true).then(url => VP.downloadUrl(url, name)).catch(err => message(VP.errText(err.message), "error"));
     }
     document.addEventListener("click", e => {
         const dl = e.target.closest("[data-file]");

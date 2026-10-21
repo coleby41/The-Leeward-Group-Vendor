@@ -187,6 +187,88 @@
         }
     }
 
+    /* ---------- file preview (in the portal — never a new tab) ---------- */
+    let previewEl = null;
+    let previewReq = null;
+
+    function previewKind(name) {
+        const n = String(name || "").toLowerCase();
+        if (/\.pdf$/.test(n)) return "pdf";
+        if (/\.(png|jpe?g|gif|webp|bmp|svg|heic|heif)$/.test(n)) return "image";
+        return "other";
+    }
+
+    function closePreview() {
+        if (!previewEl) return;
+        previewEl.classList.add("hidden");
+        previewEl.querySelector(".file-preview-body").innerHTML = "";
+        if (!document.querySelector(".popup-overlay:not(.hidden)")) document.body.classList.remove("popup-active");
+        previewReq = null;
+    }
+
+    // preview({ name, getUrl, getDownloadUrl }) — both getters resolve to a URL.
+    async function preview(req) {
+        if (!previewEl) {
+            previewEl = document.createElement("div");
+            previewEl.className = "popup-overlay hidden";
+            previewEl.id = "vpPreviewOverlay";
+            previewEl.innerHTML = `
+                <div class="popup popup--preview" role="dialog" aria-modal="true" aria-labelledby="vpPreviewTitle">
+                    <div class="file-preview-header">
+                        <h2 id="vpPreviewTitle"></h2>
+                        <div style="display:flex;align-items:center;gap:8px;flex:0 0 auto">
+                            <button type="button" class="workbook-btn workbook-btn--download" data-preview="download"></button>
+                            <button type="button" class="file-preview-close-btn" data-preview="close">✕</button>
+                        </div>
+                    </div>
+                    <div class="file-preview-body"></div>
+                </div>`;
+            document.body.appendChild(previewEl);
+            previewEl.addEventListener("click", async e => {
+                if (e.target === previewEl || e.target.closest('[data-preview="close"]')) { closePreview(); return; }
+                if (e.target.closest('[data-preview="download"]') && previewReq) {
+                    const r = previewReq;
+                    const url = await r.getDownloadUrl().catch(() => null);
+                    if (url) downloadUrl(url, r.name);
+                }
+            });
+            document.addEventListener("keydown", e => { if (e.key === "Escape" && previewEl && !previewEl.classList.contains("hidden")) closePreview(); });
+        }
+        previewReq = req;
+        const body = previewEl.querySelector(".file-preview-body");
+        previewEl.querySelector("#vpPreviewTitle").textContent = req.name || "";
+        previewEl.querySelector('[data-preview="download"]').textContent = t("btn.download");
+        previewEl.querySelector('[data-preview="download"]').classList.toggle("hidden", !req.getDownloadUrl);
+        previewEl.querySelector('[data-preview="close"]').setAttribute("aria-label", t("preview.close"));
+        body.innerHTML = `<div class="file-preview-loading">${esc(t("preview.loading"))}</div>`;
+        previewEl.classList.remove("hidden");
+        document.body.classList.add("popup-active");
+        const url = await req.getUrl().catch(() => null);
+        if (previewReq !== req) return;
+        if (!url) { body.innerHTML = `<div class="file-preview-error">${esc(t("preview.error"))}</div>`; return; }
+        const kind = req.kind || previewKind(req.name);
+        if (kind === "image") {
+            body.innerHTML = `<img class="file-preview-image" alt="${esc(req.name || "")}">`;
+            body.querySelector("img").src = url;
+        } else if (kind === "pdf") {
+            body.innerHTML = `<iframe class="file-preview-frame" title="${esc(req.name || "")}"></iframe>`;
+            body.querySelector("iframe").src = url;
+        } else {
+            body.innerHTML = `<div class="file-preview-unsupported"><p>${esc(t("preview.unsupported"))}</p></div>`;
+        }
+    }
+
+    // Saves a file without leaving the page (the URL is a signed "download" link).
+    function downloadUrl(url, name) {
+        const a = document.createElement("a");
+        a.href = url;
+        if (name) a.download = name;
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+    }
+
     /* ---------- messages ---------- */
     function setMessage(el, text, type) {
         if (!el) return;
@@ -345,7 +427,7 @@
 
     window.VP = {
         t, tHtml, esc, applyI18n, setLang, get lang() { return lang; },
-        api, errText, uploadToSlot, setMessage, markFields,
+        api, errText, uploadToSlot, setMessage, markFields, preview, closePreview, downloadUrl,
         getSession, setSession, requireMe,
         // True when this tab already knows the vendor is approved, so a page can
         // fetch its data in parallel with requireMe() instead of after it.

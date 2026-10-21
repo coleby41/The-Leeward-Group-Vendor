@@ -213,14 +213,19 @@
         });
     }
 
-    async function openFile(fileId, download) {
-        const win = download ? null : window.open("", "_blank");
-        const res = await VP.api("vendor-api", "project_file_url", { project_id: id, file_id: fileId, download });
-        if (!res.ok || !res.url) { if (win) win.close(); pageError(res.error || "generic"); return; }
-        if (win) { win.opener = null; win.location.href = res.url; return; }
-        const a = document.createElement("a");
-        a.href = res.url; a.rel = "noopener"; a.target = "_blank"; a.download = res.name || "";
-        document.body.appendChild(a); a.click(); a.remove();
+    // View opens in the portal's preview; Download saves it. Never a new tab.
+    function openFile(fileId, download) {
+        const p = state.project;
+        const files = [p.coi.file, p.coi_template, ...p.scopes.map(sc => sc.proposal)].filter(Boolean);
+        const f = files.find(x => String(x.id) === String(fileId));
+        const name = f ? f.name : "";
+        const sign = async dl => {
+            const res = await VP.api("vendor-api", "project_file_url", { project_id: id, file_id: fileId, download: dl });
+            if (!res.ok || !res.url) throw new Error(res.error || "generic");
+            return res.url;
+        };
+        if (!download) { VP.preview({ name, getUrl: () => sign(false), getDownloadUrl: () => sign(true) }); return; }
+        sign(true).then(url => VP.downloadUrl(url, name)).catch(err => pageError(err.message));
     }
     document.addEventListener("click", e => {
         const dl = e.target.closest("[data-file]");

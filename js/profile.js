@@ -257,10 +257,14 @@
         if (e.target.closest("[data-doc-cancel]")) { openDoc = null; renderDocs(); return; }
         const view = e.target.closest("[data-doc-view]");
         if (view) {
-            const win = window.open("", "_blank");
-            const res = await VP.api("vendor-api", "doc_url", { kind: view.dataset.docView });
-            if (!res.ok || !res.url) { if (win) win.close(); VP.setMessage($("docMessage"), VP.errText(res.error || "generic"), "error"); return; }
-            if (win) { win.opener = null; win.location.href = res.url; } else location.href = res.url;
+            // In the portal's preview, never a new tab.
+            const kind = view.dataset.docView;
+            const sign = async dl => {
+                const res = await VP.api("vendor-api", "doc_url", { kind, download: dl });
+                if (!res.ok || !res.url) throw new Error(res.error || "generic");
+                return res.url;
+            };
+            VP.preview({ name: `${prof.company.legal_name} - ${kind === "coi" ? "COI" : "W-9"}.pdf`, kind: "pdf", getUrl: () => sign(false), getDownloadUrl: () => sign(true) });
         }
     });
 
