@@ -38,9 +38,11 @@
                                 <span class="vp-folder__icon" aria-hidden="true"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span>
                                 <span class="vp-folder__text"><strong>${esc(p.name)}</strong>${p.location ? `<span class="bid-cell-sub">${esc(p.location)}</span>` : ""}</span>
                             </a></td>
-                        <td>${esc(first.name || t("project.addedScope"))}${more}</td>
+                        <td>${p.locked ? `<span class="chip chip--warning">${esc(t("projects.locked"))}</span>` : `${esc(first.name || t("project.addedScope"))}${more}`}</td>
                         <td>${coiChip(p)}</td>
-                        <td><div class="bid-row-actions">${p.coi.needed
+                        <td><div class="bid-row-actions">${p.locked
+                            ? `<a href="${href}" class="auth-button auth-button--sm" style="text-decoration:none;color:#fff">${esc(t("projects.finish"))}</a>`
+                            : p.coi.needed
                             ? `<a href="${href}" class="auth-button auth-button--sm" style="text-decoration:none;color:#fff">${esc(t("project.coiUpload"))}</a>`
                             : `<a href="${href}" class="workbook-btn" style="text-decoration:none">${esc(t("btn.openFolder"))}</a>`}</div></td>
                     </tr>`;

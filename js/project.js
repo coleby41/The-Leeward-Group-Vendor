@@ -1,4 +1,7 @@
-/* One project folder: the scopes awarded on it and this project's COI PDF. */
+/* One project folder: the scopes awarded on it, this project's COI PDF and
+   contract. Locked (checklist only) until the contract is signed, a W-9 is
+   on file and the COI is uploaded. The contract is signed right here
+   (sign_contract): typed name + drawn signature + "I agree". */
 (async function () {
     "use strict";
     const $ = id => document.getElementById(id);
@@ -31,6 +34,61 @@
         const p = state.project;
         $("projName").textContent = p.name;
         $("projSub").textContent = p.location || "";
+    }
+
+    const check = ok => ok
+        ? `<span class="chip chip--success">${esc(t("lock.done"))}</span>`
+        : `<span class="chip chip--warning">${esc(t("lock.todo"))}</span>`;
+
+    function contractActions(k) {
+        if (k.status === "to_sign" && k.file) return `
+            <button type="button" class="workbook-btn" style="flex:0 0 auto" data-view="${esc(k.file.id)}">${esc(t("contract.read"))}</button>
+            <button type="button" class="auth-button auth-button--sm" style="flex:0 0 auto;margin:0" data-sign="1">${esc(t("lock.signBtn"))}</button>`;
+        const f = k.signed_file || k.file;
+        if (k.status === "signed" && f) return `
+            <button type="button" class="workbook-btn" style="flex:0 0 auto" data-view="${esc(f.id)}">${esc(t("btn.view"))}</button>
+            <button type="button" class="workbook-btn workbook-btn--download" style="flex:0 0 auto" data-file="${esc(f.id)}">${esc(t("btn.download"))}</button>`;
+        return "";
+    }
+
+    function contractLine(k) {
+        if (k.status === "signed") return k.signed_in_portal && k.signer_name
+            ? t("contract.signedBy", { name: k.signer_name, date: VP.fmtDay(k.signed_at) })
+            : t("contract.signed", { date: VP.fmtDay(k.signed_at) });
+        if (k.status === "to_sign") return t("contract.toSign");
+        if (k.status === "not_needed") return t("contract.notNeeded");
+        return t("lock.contractWaiting");
+    }
+
+    function renderChecklist() {
+        const p = state.project;
+        const c = p.checklist;
+        $("checklistBody").innerHTML = `
+            <p class="auth-inline-copy" style="margin:0 0 12px">${esc(t("lock.body"))}</p>
+            <div class="vendor-profile-section vp-check-row">
+                <div class="vp-check-head"><span class="company-card-label">${esc(t("lock.contract"))}</span>${check(c.contract)}</div>
+                <p class="auth-inline-copy" style="margin:4px 0 8px">${esc(contractLine(p.contract))}</p>
+                <div class="bid-row-actions">${contractActions(p.contract)}</div>
+            </div>
+            <div class="vendor-profile-section vp-check-row">
+                <div class="vp-check-head"><span class="company-card-label">${esc(t("lock.w9"))}</span>${check(c.w9)}</div>
+                ${c.w9 ? "" : `<p class="auth-inline-copy" style="margin:4px 0 0"><a class="auth-link" href="profile.html">${esc(t("lock.w9Go"))}</a></p>`}
+            </div>
+            <div class="vendor-profile-section vp-check-row">
+                <div class="vp-check-head"><span class="company-card-label">${esc(t("lock.coi"))}</span>${check(c.coi)}</div>
+                ${c.coi ? "" : `<p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("lock.coiGo"))}</p>`}
+            </div>`;
+    }
+
+    function renderContract() {
+        const k = state.project.contract;
+        const chips = { signed: "chip--success", to_sign: "chip--warning", not_needed: "chip--muted", waiting: "chip--muted" };
+        $("contractChip").innerHTML = `<span class="chip ${chips[k.status] || "chip--muted"}">${esc(t(`contract.status.${k.status}`))}</span>`;
+        $("contractBody").innerHTML = `
+            <div class="vendor-profile-section">
+                <p class="auth-inline-copy" style="margin:0 0 8px">${esc(contractLine(k))}</p>
+                ${(k.signed_file || k.file) ? `<div class="bid-file-row"><span class="bid-file-row-name">${esc((k.signed_file || k.file).name)}</span>${contractActions(k)}</div>` : ""}
+            </div>`;
     }
 
     function renderScopes() {
@@ -213,10 +271,109 @@
         });
     }
 
+    // Sign the contract: typed name, optional title, drawn signature, "I agree".
+    function openSign() {
+        const k = state.project.contract;
+        if (k.status !== "to_sign" || busy) return;
+        const overlay = document.createElement("div");
+        overlay.className = "popup-overlay popup-overlay--blur";
+        overlay.id = "signOverlay";
+        overlay.innerHTML = `
+            <div class="popup workbook-popup vp-sign-popup" role="dialog" aria-modal="true" aria-labelledby="signTitle">
+                <h2 id="signTitle">${esc(t("sign.title"))}</h2>
+                <p class="auth-inline-copy" style="margin:0 0 12px">${esc(t("sign.intro", { name: k.file?.name || "" }))}</p>
+                <form class="auth-form" id="signForm" novalidate>
+                    <label class="auth-field">${esc(t("sign.name"))}<input type="text" name="name" autocomplete="name" value="${esc(me.user?.name || "")}"></label>
+                    <label class="auth-field">${esc(t("sign.titleField"))}<input type="text" name="title" autocomplete="organization-title" value="${esc(me.user?.title || "")}"></label>
+                    <div class="auth-field" data-field="signature">
+                        <span>${esc(t("sign.pad"))}</span>
+                        <canvas class="vp-sign-pad" id="signPad" aria-label="${esc(t("sign.pad"))}"></canvas>
+                        <button type="button" class="auth-link vp-sign-clear" id="signClear">${esc(t("sign.clear"))}</button>
+                    </div>
+                    <label class="vp-sign-agree" data-field="agree"><input type="checkbox" name="agree"> <span>${esc(t("sign.agree"))}</span></label>
+                    <p class="auth-message hidden" id="signMessage" role="alert"></p>
+                    <div class="popup-buttons">
+                        <button type="button" class="auth-button auth-button--secondary" data-pop="cancel">${esc(t("cancel"))}</button>
+                        <button type="submit" class="auth-button" id="signSubmit">${esc(t("sign.submit"))}</button>
+                    </div>
+                </form>
+            </div>`;
+        document.body.appendChild(overlay);
+        document.body.classList.add("popup-active");
+
+        // Signature pad (mouse, pen or finger).
+        const canvas = overlay.querySelector("#signPad");
+        const ctx2d = canvas.getContext("2d");
+        let drawn = false, drawing = false, last = null;
+        const size = () => {
+            const r = canvas.getBoundingClientRect();
+            const ratio = window.devicePixelRatio || 1;
+            canvas.width = Math.round(r.width * ratio);
+            canvas.height = Math.round(r.height * ratio);
+            ctx2d.setTransform(ratio, 0, 0, ratio, 0, 0);
+            ctx2d.lineWidth = 2.2; ctx2d.lineCap = "round"; ctx2d.lineJoin = "round"; ctx2d.strokeStyle = "#14263a";
+            drawn = false;
+        };
+        const pos = e => { const r = canvas.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; };
+        canvas.addEventListener("pointerdown", e => { drawing = true; last = pos(e); canvas.setPointerCapture(e.pointerId); e.preventDefault(); });
+        canvas.addEventListener("pointermove", e => {
+            if (!drawing) return;
+            const p2 = pos(e);
+            ctx2d.beginPath(); ctx2d.moveTo(last.x, last.y); ctx2d.lineTo(p2.x, p2.y); ctx2d.stroke();
+            last = p2; drawn = true;
+        });
+        const stop = () => { drawing = false; };
+        canvas.addEventListener("pointerup", stop);
+        canvas.addEventListener("pointercancel", stop);
+        overlay.querySelector("#signClear").addEventListener("click", () => { ctx2d.clearRect(0, 0, canvas.width, canvas.height); drawn = false; });
+        requestAnimationFrame(size);
+
+        const form = overlay.querySelector("#signForm");
+        const msg = overlay.querySelector("#signMessage");
+        const close = () => {
+            overlay.remove();
+            if (!document.querySelector(".popup-overlay:not(.hidden)")) document.body.classList.remove("popup-active");
+            document.removeEventListener("keydown", onKey);
+        };
+        const onKey = ev => { if (ev.key === "Escape" && !busy) close(); };
+        document.addEventListener("keydown", onKey);
+        overlay.addEventListener("click", ev => {
+            if (busy) return;
+            if (ev.target === overlay || ev.target.closest('[data-pop="cancel"]')) close();
+        });
+        form.addEventListener("submit", async ev => {
+            ev.preventDefault();
+            if (busy) return;
+            const name = form.elements.name.value.trim();
+            const missing = [!name ? "name" : null, !drawn ? "signature" : null, !form.elements.agree.checked ? "agree" : null].filter(Boolean);
+            if (missing.length) { VP.markFields(form, missing); VP.setMessage(msg, t(!drawn && name ? "sign.needSignature" : "err.missing_fields"), "error"); return; }
+            VP.markFields(form, []); VP.setMessage(msg, "");
+            busy = true;
+            const btn = overlay.querySelector("#signSubmit");
+            btn.disabled = true; btn.textContent = t("sign.signing");
+            try {
+                const res = await VP.api("vendor-api", "sign_contract", {
+                    project_id: id, name, title: form.elements.title.value.trim(), agree: true,
+                    signature_png: canvas.toDataURL("image/png"),
+                });
+                if (!res.ok) { VP.setMessage(msg, VP.errText(res.error), "error"); return; }
+                busy = false;
+                close();
+                await load();
+                flash = { text: t("sign.done"), type: "success" };
+                renderAll();
+            } finally {
+                busy = false;
+                if (document.body.contains(btn)) { btn.disabled = false; btn.textContent = t("sign.submit"); }
+            }
+        });
+        form.elements.name.focus();
+    }
+
     // View opens in the portal's preview; Download saves it. Never a new tab.
     function openFile(fileId, download) {
         const p = state.project;
-        const files = [p.coi.file, p.coi_template, ...p.scopes.map(sc => sc.proposal)].filter(Boolean);
+        const files = [p.coi.file, p.coi_template, p.contract?.file, p.contract?.signed_file, ...p.scopes.map(sc => sc.proposal)].filter(Boolean);
         const f = files.find(x => String(x.id) === String(fileId));
         const name = f ? f.name : "";
         const sign = async dl => {
@@ -228,6 +385,7 @@
         sign(true).then(url => VP.downloadUrl(url, name)).catch(err => pageError(err.message));
     }
     document.addEventListener("click", e => {
+        if (e.target.closest("[data-sign]")) { openSign(); return; }
         const dl = e.target.closest("[data-file]");
         if (dl) { openFile(dl.dataset.file, true); return; }
         const view = e.target.closest("[data-view]");
@@ -235,7 +393,23 @@
     });
 
     if (!(await load())) return;
-    const renderAll = () => { renderHead(); renderScopes(); renderDocs(); };
+    const renderAll = () => {
+        const p = state.project;
+        const f = flash; flash = null;   // shown once, in the card that changed
+        renderHead();
+        $("checklistCard").classList.toggle("hidden", !p.locked);
+        $("scopesCard").classList.toggle("hidden", p.locked);
+        $("contractCard").classList.toggle("hidden", p.locked || p.contract.status === "waiting" || p.contract.status === "not_needed");
+        if (p.locked) {
+            renderChecklist();
+            if (f) $("checklistBody").insertAdjacentHTML("afterbegin", `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>`);
+        } else {
+            renderScopes();
+            renderContract();
+            if (f) $("contractBody").insertAdjacentHTML("afterbegin", `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>`);
+        }
+        renderDocs();
+    };
     renderAll();
     $("projectGrid").classList.remove("hidden");
     document.addEventListener("vp:lang", renderAll);

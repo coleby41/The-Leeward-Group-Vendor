@@ -162,3 +162,27 @@ body:has(> .auth-page) { overflow-x: hidden; overflow-y: auto; }
     .vp-folder-table .bid-row-actions { justify-content: flex-start; margin-top: 6px; }
     .vp-folder-table td:has(.bid-row-actions:empty) { display: none; }
 }
+
+/* Locked project checklist + in-portal contract signing (Coleby, 2026-10-31) */
+.vp-check-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.vp-check-row + .vp-check-row { border-top: 1px solid var(--border); padding-top: 12px; }
+.vp-sign-popup { width: min(92vw, 520px); }
+.vp-sign-pad {
+  display: block; width: 100%; height: 160px; margin-top: 6px;
+  border: 1px dashed var(--border); border-radius: var(--radius-sm);
+  background: var(--surface-alt); touch-action: none; cursor: crosshair;
+}
+.auth-field.is-invalid .vp-sign-pad, [data-field="signature"].field-error .vp-sign-pad { border-color: var(--danger); }
+.vp-sign-clear { align-self: flex-end; border: 0; background: none; padding: 4px 0; cursor: pointer; font: inherit; font-size: 0.85rem; }
+.vp-sign-agree { display: flex; gap: 10px; align-items: flex-start; font-size: 0.88rem; line-height: 1.45; }
+.vp-sign-agree input { margin-top: 3px; flex: 0 0 auto; }
+
+/* Phone: popups sit over a blurred (not darkened) page. */
+@media (max-width: 768px) {
+  .popup-overlay.popup-overlay--blur {
+    background: transparent;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+  .popup-overlay--blur > .popup { box-shadow: 0 -12px 40px rgba(7, 20, 30, 0.16); }
+}

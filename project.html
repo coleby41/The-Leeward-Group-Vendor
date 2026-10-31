@@ -29,7 +29,18 @@
 
   <div class="bid-review-grid hidden" id="projectGrid">
     <div class="vp-col">
-      <div class="card">
+      <!-- Locked project (Coleby, 2026-10-31): until the contract is signed,
+           a W-9 is on file and this project's COI is uploaded, only this
+           checklist shows — no scopes, amounts or proposals. -->
+      <div class="card hidden" id="checklistCard">
+        <div class="card-header"><h2 class="card-title" data-i18n="lock.title"></h2></div>
+        <div class="vendor-profile-body" id="checklistBody"></div>
+      </div>
+      <div class="card hidden" id="contractCard">
+        <div class="card-header"><h2 class="card-title" data-i18n="contract.title"></h2><span id="contractChip"></span></div>
+        <div class="vendor-profile-body" id="contractBody"></div>
+      </div>
+      <div class="card" id="scopesCard">
         <div class="card-header"><h2 class="card-title" data-i18n="project.scopes"></h2></div>
         <div id="scopesBody"></div>
       </div>
