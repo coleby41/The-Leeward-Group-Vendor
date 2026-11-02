@@ -186,3 +186,54 @@ body:has(> .auth-page) { overflow-x: hidden; overflow-y: auto; }
   }
   .popup-overlay--blur > .popup { box-shadow: 0 -12px 40px rgba(7, 20, 30, 0.16); }
 }
+
+/* ---------- Locked project: "finish your paperwork" page ----------
+   project.html when the project is locked. Its own page: no top nav, no
+   side nav, no cards. Centered construction worker with a stop sign,
+   title and a 3-part progress bar, then a simple checklist: green check
+   = ready, red X = still needed + how to fix it + the button to do it. */
+body.vp-noshell .main-content { margin: 0 auto !important; max-width: 760px; padding: 28px 20px 110px; }
+
+.vp-lock { display: flex; flex-direction: column; min-width: 0; }
+.vp-lock-home { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: .95rem; color: var(--accent); text-decoration: none; }
+.vp-lock-home:hover { text-decoration: underline; }
+
+.vp-lock-hero { text-align: center; margin: 18px 0 26px; }
+.vp-lock-worker { width: 200px; height: auto; }
+.vp-lock-eyebrow { margin: 8px 0 4px; font-size: .78rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.vp-lock-hero h1 { margin: 0 0 8px; font-size: 1.75rem; line-height: 1.2; }
+.vp-lock-hero > p { margin: 0 auto; max-width: 520px; color: var(--text-soft); }
+.vp-lock-bar { display: flex; gap: 6px; max-width: 260px; margin: 18px auto 6px; }
+.vp-lock-bar span { flex: 1; height: 6px; border-radius: 3px; background: #f3c9c3; }
+.vp-lock-bar span.is-done { background: #1f8a4c; }
+.vp-lock-count { font-size: .82rem; font-weight: 700; color: var(--text-soft); }
+
+.vp-lock-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--border); }
+.vp-lock-item {
+  --lock-color: #c8402f;
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 16px; align-items: start;
+  padding: 20px 4px; border-bottom: 1px solid var(--border);
+}
+.vp-lock-item.is-done { --lock-color: #1f8a4c; }
+.vp-lock-icon { width: 30px; height: 30px; flex-shrink: 0; margin-top: 1px; color: var(--lock-color); }
+.vp-lock-item h2 { margin: 0; font-size: 1.05rem; }
+.vp-lock-state { margin-left: 8px; font-size: .8rem; font-weight: 800; color: var(--lock-color); }
+.vp-lock-item-text p { margin: 4px 0 0; color: var(--text-soft); font-size: .92rem; line-height: 1.45; }
+.vp-lock-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.vp-lock-actions:empty { display: none; }
+.vp-lock-actions .auth-button { width: auto; margin: 0; }
+.vp-lock-extra { grid-column: 2 / -1; }
+.vp-lock-upload { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.vp-lock-upload input[type="file"] { font-size: .9rem; max-width: 100%; min-width: 0; }
+.vp-lock-upload .auth-button { width: auto; margin: 0; }
+.vp-lock-upload .auth-message { flex-basis: 100%; margin: 0; }
+
+@media (max-width: 560px) {
+  body.vp-noshell .main-content { padding: 18px 16px 100px; }
+  .vp-lock-worker { width: 160px; }
+  .vp-lock-hero h1 { font-size: 1.35rem; }
+  .vp-lock-item { grid-template-columns: auto minmax(0, 1fr); gap: 12px; }
+  .vp-lock-actions { grid-column: 2; justify-content: flex-start; }
+  .vp-lock-extra { grid-column: 2; }
+  .vp-lock-upload .auth-button { width: 100%; }
+}

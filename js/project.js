@@ -11,7 +11,8 @@
     let prefetch = VP.approvedCached() ? VP.api("vendor-api", "project", { id }) : null; // in parallel with requireMe
     const me = await VP.requireMe();
     if (me.error) return pageError(me.error);
-    VP.renderShell("projects");
+    // The shell (top + side nav) is added after the project loads, and only
+    // if it isn't locked: the locked view is a page of its own, no nav.
 
     let state = null;     // { project, company_coi }
     let flash = null;
@@ -78,6 +79,123 @@
                 <div class="vp-check-head"><span class="company-card-label">${esc(t("lock.coi"))}</span>${check(c.coi)}</div>
                 ${c.coi ? "" : `<p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("lock.coiGo"))}</p>`}
             </div>`;
+    }
+
+    /* ---------- Locked view ----------
+       Full page, no nav: a construction worker holding a stop sign, then
+       one checklist row per requirement. Ready = green check;
+       still needed = red X + how to fix it (with the button
+       to do it right there where possible). */
+    const ICON_OK = `<svg class="vp-lock-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M7 12.4l3.3 3.3L17.2 8.8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const ICON_NO = `<svg class="vp-lock-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="currentColor"/><path d="M8.3 8.3l7.4 7.4M15.7 8.3l-7.4 7.4" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>`;
+
+    // Original illustration: construction worker in a hard hat and safety
+    // vest holding up a stop sign.
+    function workerSvg() {
+        return `<svg class="vp-lock-worker" viewBox="0 0 220 240" role="img" aria-label="${esc(t("lock.title"))}">
+            <ellipse cx="104" cy="226" rx="70" ry="9" fill="#0b2a3f" opacity=".08"/>
+            <!-- sign pole + sign -->
+            <rect x="163" y="66" width="6" height="150" rx="3" fill="#8d99a6"/>
+            <g transform="translate(166 58)">
+                <polygon points="-15,-36 15,-36 36,-15 36,15 15,36 -15,36 -36,15 -36,-15" fill="#fff"/>
+                <polygon points="-13,-32 13,-32 32,-13 32,13 13,32 -13,32 -32,13 -32,-13" fill="#d23b33"/>
+                <text x="0" y="6.5" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="800" font-size="17" fill="#fff" letter-spacing=".5">${esc(t("lock.stop"))}</text>
+            </g>
+            <!-- legs + boots -->
+            <rect x="80" y="168" width="19" height="48" rx="6" fill="#23395b"/>
+            <rect x="105" y="168" width="19" height="48" rx="6" fill="#23395b"/>
+            <path d="M76 210h25v12H72a4 4 0 0 1 4-12z" fill="#4a3426"/>
+            <path d="M103 210h25a4 4 0 0 1 4 12h-29z" fill="#4a3426"/>
+            <!-- left arm (down) -->
+            <path d="M74 116c-8 10-12 26-12 42" stroke="#2f6f9f" stroke-width="14" stroke-linecap="round" fill="none"/>
+            <circle cx="62" cy="162" r="7.5" fill="#e0a77c"/>
+            <!-- body: shirt + safety vest -->
+            <rect x="70" y="104" width="64" height="72" rx="16" fill="#2f6f9f"/>
+            <path d="M72 118c0-8 6-14 14-14h8l8 20 8-20h8c8 0 14 6 14 14v44c0 8-6 14-14 14H86c-8 0-14-6-14-14z" fill="#ff7a1a"/>
+            <rect x="72" y="146" width="60" height="7" fill="#e8edf2" opacity=".95"/>
+            <rect x="85" y="106" width="6" height="40" fill="#e8edf2" opacity=".95"/>
+            <rect x="113" y="106" width="6" height="40" fill="#e8edf2" opacity=".95"/>
+            <!-- right arm (up, holding the pole) -->
+            <path d="M128 116c12-4 22-14 30-28" stroke="#2f6f9f" stroke-width="14" stroke-linecap="round" fill="none"/>
+            <circle cx="162" cy="86" r="8" fill="#e0a77c"/>
+            <!-- neck + head -->
+            <rect x="94" y="92" width="16" height="14" rx="5" fill="#d29670"/>
+            <circle cx="102" cy="76" r="21" fill="#e0a77c"/>
+            <circle cx="94.5" cy="78" r="2.3" fill="#1b2733"/>
+            <circle cx="109.5" cy="78" r="2.3" fill="#1b2733"/>
+            <path d="M96 87c3.5 3 8.5 3 12 0" stroke="#1b2733" stroke-width="2.2" stroke-linecap="round" fill="none"/>
+            <!-- hard hat -->
+            <path d="M79 68c0-15 10-26 23-26s23 11 23 26z" fill="#f5b800"/>
+            <rect x="74" y="64" width="56" height="8" rx="4" fill="#e0a500"/>
+            <rect x="99" y="44" width="6" height="22" rx="3" fill="#ffd34d"/>
+        </svg>`;
+    }
+
+    // One checklist row: icon, title + Ready / Not done yet, how to fix it,
+    // and buttons. `extra` is a full-width part under the row (COI upload).
+    function lockRow(done, title, help, actions, extra) {
+        return `<li class="vp-lock-item ${done ? "is-done" : "is-todo"}">
+            ${done ? ICON_OK : ICON_NO}
+            <div class="vp-lock-item-text">
+                <h2>${esc(title)}<span class="vp-lock-state">${esc(t(done ? "lock.ready" : "lock.notReady"))}</span></h2>
+                ${help ? `<p>${esc(help)}</p>` : ""}
+            </div>
+            <div class="vp-lock-actions">${actions || ""}</div>
+            ${extra ? `<div class="vp-lock-extra">${extra}</div>` : ""}
+        </li>`;
+    }
+
+    function renderLock(f) {
+        const p = state.project;
+        const c = p.checklist;
+        const k = p.contract;
+        const coi = p.coi;
+        const tpl = p.coi_template;
+        const exempt = state.company_coi.exempt && !coi.needed;
+
+        // Contract
+        const contractHelp = c.contract ? contractLine(k) : (k.status === "to_sign" ? t("lock.fixContract") : t("lock.contractWaiting"));
+        const contract = lockRow(c.contract, t("lock.contract"), contractHelp, contractActions(k));
+
+        // W-9
+        const w9 = lockRow(c.w9, t("lock.w9"), t(c.w9 ? "lock.w9Done" : "lock.fixW9"),
+            c.w9 ? "" : `<a class="auth-button auth-button--sm" href="profile.html">${esc(t("lock.w9Btn"))}</a>`);
+
+        // COI for this project
+        let coiRow;
+        if (c.coi) {
+            const help = coi.file ? t("project.coiUploaded", { date: VP.fmtDay(coi.file.uploaded_at) }) : (exempt ? t("project.coiExempt") : "");
+            const actions = coi.file ? `
+                <button type="button" class="workbook-btn" data-view="${esc(coi.file.id)}">${esc(t("btn.view"))}</button>
+                <button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(coi.file.id)}">${esc(t("btn.download"))}</button>` : "";
+            coiRow = lockRow(true, t("lock.coi"), help, actions);
+        } else {
+            const actions = tpl ? `<button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(tpl.id)}">${esc(t("project.templateDownload"))}</button>` : "";
+            const upload = `
+                <form class="vp-lock-upload" id="coiForm" novalidate>
+                    <input type="file" name="file" accept="application/pdf,.pdf" aria-label="${esc(t("coi.file"))}">
+                    <button type="submit" class="auth-button auth-button--sm" id="coiUploadBtn">${esc(t("project.coiUpload"))}</button>
+                    <p class="auth-message hidden" id="coiMessage" role="alert"></p>
+                </form>`;
+            coiRow = lockRow(false, t("lock.coi"), t("lock.fixCoi"), actions, upload);
+        }
+
+        const done = [c.contract, c.w9, c.coi];
+        const doneCount = done.filter(Boolean).length;
+
+        $("lockView").innerHTML = `
+            <a class="vp-lock-home" href="invites.html">‹ ${esc(t("lock.home"))}</a>
+            <div class="vp-lock-hero">
+                ${workerSvg()}
+                <p class="vp-lock-eyebrow">${esc(p.name || "")}</p>
+                <h1>${esc(t("lock.title"))}</h1>
+                <p>${esc(t("lock.body"))}</p>
+                <div class="vp-lock-bar" aria-hidden="true">${done.map(d => `<span class="${d ? "is-done" : ""}"></span>`).join("")}</div>
+                <div class="vp-lock-count">${esc(t("lock.progress", { n: doneCount, total: 3 }))}</div>
+            </div>
+            ${f ? `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>` : ""}
+            <ul class="vp-lock-list">${contract}${w9}${coiRow}</ul>`;
+        $("coiForm")?.addEventListener("submit", upload);
     }
 
     function renderContract() {
@@ -187,7 +305,7 @@
             }
             await load();
             flash = { text: t(dateChanged ? "coiPop.dateSaved" : "project.coiDone"), type: "success" };
-            renderDocs();
+            if (state.project.locked || startedLocked) renderAll(); else renderDocs();
             VP.refreshInviteBadge();
         } finally {
             busy = false;
@@ -392,10 +510,23 @@
         if (view) openFile(view.dataset.view, false);
     });
 
-    if (!(await load())) return;
-    const renderAll = () => {
+    if (!(await load())) { VP.renderShell("projects"); return; }
+    const startedLocked = Boolean(state.project.locked);
+    if (startedLocked) document.body.classList.add("vp-noshell");
+    else VP.renderShell("projects");
+
+    function renderAll() {
         const p = state.project;
+        // Everything's done: open the project normally (with the nav).
+        if (startedLocked && !p.locked) { location.reload(); return; }
         const f = flash; flash = null;   // shown once, in the card that changed
+        if (p.locked) {
+            $("lockView").classList.remove("hidden");
+            $("projHero").classList.add("hidden");
+            $("projectGrid").classList.add("hidden");
+            renderLock(f);
+            return;
+        }
         renderHead();
         $("checklistCard").classList.toggle("hidden", !p.locked);
         $("scopesCard").classList.toggle("hidden", p.locked);
@@ -409,8 +540,8 @@
             if (f) $("contractBody").insertAdjacentHTML("afterbegin", `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>`);
         }
         renderDocs();
-    };
+        $("projectGrid").classList.remove("hidden");
+    }
     renderAll();
-    $("projectGrid").classList.remove("hidden");
     document.addEventListener("vp:lang", renderAll);
 })();

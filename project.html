@@ -17,7 +17,13 @@
 </head>
 <body>
 <main class="main-content">
-  <section class="hero-section">
+  <!-- Locked project (Coleby, 2026-11-01): full-page "finish your
+       paperwork" view — construction worker with a stop sign, one card per
+       requirement (green check = ready, red X = still needed + how to fix
+       it), and a Back to portal home button. No top nav or side nav here. -->
+  <section class="vp-lock hidden" id="lockView"></section>
+
+  <section class="hero-section" id="projHero">
     <div>
       <p class="eyebrow"><a href="projects.html" style="color: inherit" data-i18n="project.back"></a> · <span data-i18n="project.eyebrow"></span></p>
       <h1 id="projName">&nbsp;</h1>
