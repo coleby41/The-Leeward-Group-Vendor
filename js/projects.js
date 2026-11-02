@@ -4,7 +4,7 @@
     const $ = id => document.getElementById(id);
     const { t, esc } = VP;
 
-    const firstLoad = VP.approvedCached() ? VP.api("vendor-api", "projects") : null; // in parallel with requireMe
+    const first = VP.swr("projects"); // remembered copy now, fresh one in parallel with requireMe
     const data = await VP.requireMe();
     if (data.error) { $("projectsBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(data.error))}</p>`; return; }
     VP.renderShell("projects");
@@ -51,10 +51,12 @@
             </div>` : `<p class="auth-inline-copy">${esc(t("projects.empty"))}</p>`;
     }
 
-    const res = await (firstLoad || VP.api("vendor-api", "projects"));
-    if (!res.ok) { $("projectsBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(res.error))}</p>`; return; }
+    document.addEventListener("vp:lang", render);
+    if (first.cached) { projects = first.cached.projects; exempt = first.cached.coi_exempt; render(); }
+    const res = await first.fresh;
+    if (!res.ok) { if (!first.cached) $("projectsBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(res.error))}</p>`; return; }
+    if (first.cached && VP.same(res, first.cached)) return;
     projects = res.projects;
     exempt = res.coi_exempt;
     render();
-    document.addEventListener("vp:lang", render);
 })();

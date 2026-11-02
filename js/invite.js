@@ -5,7 +5,8 @@
     const { t, esc } = VP;
     const id = new URLSearchParams(location.search).get("id") || "";
 
-    let prefetch = VP.approvedCached() ? VP.api("vendor-api", "invite", { id }) : null; // in parallel with requireMe
+    const first = VP.swr("invite", { id }); // remembered copy now, fresh one in parallel with requireMe
+    let prefetch = first.cached ? Promise.resolve(first.cached) : first.fresh;
     const me = await VP.requireMe();
     if (me.error) return showError(me.error);
     VP.renderShell("invites");
@@ -277,11 +278,20 @@
     renderResponse();
     $("inviteGrid").classList.remove("hidden");
 
-    document.addEventListener("vp:lang", () => {
+    function rerender() {
         const f = $("bidForm") || $("declineForm");
         const keep = {};
         if (f) Array.from(f.elements).forEach(el => { if (el.name && el.type !== "file") keep[el.name] = el.value; });
         renderInfo();
         renderResponse(keep);
+    }
+    document.addEventListener("vp:lang", rerender);
+
+    // Showed the remembered copy: swap in the fresh one if anything changed
+    // (whatever they've typed in the forms is kept).
+    if (first.cached) first.fresh.then(res => {
+        if (!res || !res.ok || VP.same(res, first.cached) || busy) return;
+        state = res;
+        rerender();
     });
 })();

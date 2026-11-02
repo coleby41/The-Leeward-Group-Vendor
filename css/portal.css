@@ -237,3 +237,24 @@ body.vp-noshell .main-content { margin: 0 auto !important; max-width: 760px; pad
   .vp-lock-extra { grid-column: 2; }
   .vp-lock-upload .auth-button { width: 100%; }
 }
+
+/* ---------- Smooth page-to-page (like the Staff Portal) ----------
+   Pages fade instead of flashing white: the old page fades out first,
+   then the new one fades in (never on top of each other), and the top
+   bar + side nav hold still. Browsers without cross-page view
+   transitions just change pages normally. */
+@view-transition { navigation: auto; }
+.header { view-transition-name: vp-header; }
+.sidebar { view-transition-name: vp-sidebar; }
+
+::view-transition-old(root) { animation: vp-page-out .1s ease-in both; }
+::view-transition-new(root) { animation: vp-page-in .2s ease-out .08s both; }
+::view-transition-group(vp-header), ::view-transition-group(vp-sidebar),
+::view-transition-new(vp-header), ::view-transition-new(vp-sidebar) { animation: none; }
+::view-transition-old(vp-header), ::view-transition-old(vp-sidebar) { display: none; }
+@keyframes vp-page-out { to { opacity: 0; } }
+@keyframes vp-page-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}

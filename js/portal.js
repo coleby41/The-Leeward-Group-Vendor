@@ -138,6 +138,40 @@
     const getSession = () => store.get("vp-session");
     const setSession = token => store.set("vp-session", token || null);
 
+    /* ---------- page data cache (instant pages) ----------
+       Every page used to wait on the server before showing anything. Now
+       each read (me, invites, invite, projects, project, profile) is
+       remembered for this browser session; a page shows the remembered
+       copy instantly and swaps in the fresh one when it arrives (usually
+       identical, so nothing visibly changes). Same idea as the Staff
+       Portal. Cleared on sign out; tied to the session token. */
+    const READ_ACTIONS = new Set(["me", "invites", "invite", "projects", "project", "profile"]);
+    const CACHE_PREFIX = "vp-c:";
+    function cacheKey(fn, action, body) {
+        const b = { ...body }; delete b.session;
+        return `${CACHE_PREFIX}${fn}:${action}:${JSON.stringify(b)}`;
+    }
+    function peek(fn, action, body = {}) {
+        try {
+            const c = JSON.parse(window.sessionStorage.getItem(cacheKey(fn, action, body)) || "null");
+            return c && c.s === getSession() && c.d && c.d.ok ? c.d : null;
+        } catch (e) { return null; }
+    }
+    function remember(fn, action, body, data) {
+        if (!data || !data.ok || !READ_ACTIONS.has(action)) return;
+        try { window.sessionStorage.setItem(cacheKey(fn, action, body), JSON.stringify({ s: getSession(), d: data })); } catch (e) { /* full / private mode */ }
+    }
+    function clearCache() {
+        try {
+            Object.keys(window.sessionStorage).filter(k => k.startsWith(CACHE_PREFIX)).forEach(k => window.sessionStorage.removeItem(k));
+        } catch (e) { /* ignore */ }
+    }
+    // { cached, fresh }: cached = last copy (or null), fresh = promise of the server's answer.
+    function swr(action, body = {}) {
+        return { cached: peek("vendor-api", action, body), fresh: api("vendor-api", action, body) };
+    }
+    const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
     /* ---------- API ---------- */
     async function api(fn, action, body = {}) {
         if (!CFG.supabaseUrl) return { ok: false, error: "network" };
@@ -162,6 +196,7 @@
             location.replace(`index.html?next=${next}`);
             return new Promise(() => {}); // page is leaving
         }
+        remember(fn, action, body, data);
         return data;
     }
 
@@ -326,6 +361,7 @@
         const token = getSession();
         setSession(null);
         try { window.sessionStorage.removeItem("vp-me"); } catch (e) { /* ignore */ }
+        clearCache();
         if (token) await api("vendor-auth", "sign_out", { session: token });
         location.replace("index.html");
     }
@@ -400,6 +436,8 @@
         if (!badge) return;
         let invites = list;
         if (!invites) {
+            const cached = peek("vendor-api", "invites");
+            if (cached) { refreshInviteBadge(cached.invites); }
             const data = await api("vendor-api", "invites");
             if (!data.ok) return;
             invites = data.invites;
@@ -432,6 +470,7 @@
         // True when this tab already knows the vendor is approved, so a page can
         // fetch its data in parallel with requireMe() instead of after it.
         approvedCached: () => Boolean(readMeCache()?.company), renderShell, refreshInviteBadge, signOut,
+        peek, swr, same,
         get me() { return me; },
         fmtDateTime, fmtShort, fmtDay, fmtMoney, daysLeft, daysLeftText,
         store,

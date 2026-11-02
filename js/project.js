@@ -8,7 +8,10 @@
     const { t, esc } = VP;
     const id = new URLSearchParams(location.search).get("id") || "";
 
-    let prefetch = VP.approvedCached() ? VP.api("vendor-api", "project", { id }) : null; // in parallel with requireMe
+    // Remembered copy shows instantly; the server's answer (asked for right
+    // away, in parallel with requireMe) replaces it when it arrives.
+    const first = VP.swr("project", { id });
+    let prefetch = first.cached ? Promise.resolve(first.cached) : first.fresh;
     const me = await VP.requireMe();
     if (me.error) return pageError(me.error);
     // The shell (top + side nav) is added after the project loads, and only
@@ -544,4 +547,12 @@
     }
     renderAll();
     document.addEventListener("vp:lang", renderAll);
+
+    // Showed the remembered copy: swap in the fresh one if anything changed.
+    if (first.cached) first.fresh.then(res => {
+        if (!res || !res.ok || VP.same(res, first.cached)) return;
+        if (Boolean(res.project.locked) !== startedLocked) { location.reload(); return; } // layout changes (nav / no nav)
+        state = res;
+        renderAll();
+    });
 })();

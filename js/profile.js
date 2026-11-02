@@ -4,7 +4,8 @@
     const $ = id => document.getElementById(id);
     const { t, esc } = VP;
 
-    let prefetch = VP.approvedCached() ? VP.api("vendor-api", "profile") : null; // in parallel with requireMe
+    const first = VP.swr("profile"); // remembered copy now, fresh one in parallel with requireMe
+    let prefetch = first.cached ? Promise.resolve(first.cached) : first.fresh;
     const me = await VP.requireMe();
     if (me.error) return pageError(me.error);
     VP.renderShell("profile");
@@ -337,7 +338,14 @@
     renderAll();
     $("profileGrid").classList.remove("hidden");
 
-    document.addEventListener("vp:lang", () => {
-        renderAll({ company: snapshot($("companyForm")), team: snapshot($("teamForm")), me: snapshot($("meForm")), docs: snapshot($("docForm")) });
+    const rerender = () => renderAll({ company: snapshot($("companyForm")), team: snapshot($("teamForm")), me: snapshot($("meForm")), docs: snapshot($("docForm")) });
+    document.addEventListener("vp:lang", rerender);
+
+    // Showed the remembered copy: swap in the fresh one if anything changed
+    // (whatever they've typed in the forms is kept).
+    if (first.cached) first.fresh.then(res => {
+        if (!res || !res.ok || VP.same(res, first.cached)) return;
+        prof = res;
+        rerender();
     });
 })();

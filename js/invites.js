@@ -4,7 +4,7 @@
     const $ = id => document.getElementById(id);
     const { t, esc } = VP;
 
-    const firstLoad = VP.approvedCached() ? VP.api("vendor-api", "invites") : null; // in parallel with requireMe
+    const first = VP.swr("invites"); // remembered copy now, fresh one in parallel with requireMe
     const data = await VP.requireMe();
     if (data.error) { $("openBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(data.error))}</p>`; return; }
     VP.renderShell("invites");
@@ -74,7 +74,10 @@
             </div>` : `<p class="auth-inline-copy">${esc(t("invites.emptyPast"))}</p>`;
     }
 
-    const res = await (firstLoad || VP.api("vendor-api", "invites"));
+    document.addEventListener("vp:lang", render);
+    if (first.cached) { invites = first.cached.invites; VP.refreshInviteBadge(invites); render(); }
+    const res = await first.fresh;
+    if (first.cached && (!res.ok || VP.same(res, first.cached))) return;
     if (!res.ok) {
         $("openBody").innerHTML = `<p class="auth-message error">${esc(VP.errText(res.error))}</p>`;
         $("pastBody").innerHTML = "";
@@ -83,5 +86,4 @@
     invites = res.invites;
     VP.refreshInviteBadge(invites);
     render();
-    document.addEventListener("vp:lang", render);
 })();
