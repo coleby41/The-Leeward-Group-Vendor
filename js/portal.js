@@ -146,7 +146,18 @@
        identical, so nothing visibly changes). Same idea as the Staff
        Portal. Cleared on sign out; tied to the session token. */
     const READ_ACTIONS = new Set(["me", "invites", "invite", "projects", "project", "profile"]);
-    const CACHE_PREFIX = "vp-c:";
+    // Bump CACHE_VERSION whenever vendor-api's answers change shape (new or
+    // renamed fields). Copies saved by an older version are thrown away, so
+    // a page never flashes a stale copy that's missing the new fields.
+    const CACHE_VERSION = "2";
+    const CACHE_PREFIX = `vp-c:v${CACHE_VERSION}:`;
+    const ME_KEY = `vp-me:v${CACHE_VERSION}`;
+    // Drop copies left by older versions (they never match again anyway).
+    try {
+        Object.keys(window.sessionStorage)
+            .filter(k => (k.startsWith("vp-c:") && !k.startsWith(CACHE_PREFIX)) || (k.startsWith("vp-me") && k !== ME_KEY))
+            .forEach(k => window.sessionStorage.removeItem(k));
+    } catch (e) { /* private mode */ }
     function cacheKey(fn, action, body) {
         const b = { ...body }; delete b.session;
         return `${CACHE_PREFIX}${fn}:${action}:${JSON.stringify(b)}`;
@@ -163,7 +174,7 @@
     }
     function clearCache() {
         try {
-            Object.keys(window.sessionStorage).filter(k => k.startsWith(CACHE_PREFIX)).forEach(k => window.sessionStorage.removeItem(k));
+            Object.keys(window.sessionStorage).filter(k => k.startsWith("vp-c:")).forEach(k => window.sessionStorage.removeItem(k));
         } catch (e) { /* ignore */ }
     }
     // { cached, fresh }: cached = last copy (or null), fresh = promise of the server's answer.
@@ -330,12 +341,12 @@
     // background (and a signed-out session still sends them to sign in).
     function readMeCache() {
         try {
-            const c = JSON.parse(window.sessionStorage.getItem("vp-me") || "null");
+            const c = JSON.parse(window.sessionStorage.getItem(ME_KEY) || "null");
             return c && c.session === getSession() && c.data && c.data.ok ? c.data : null;
         } catch (e) { return null; }
     }
     function writeMeCache(data) {
-        try { window.sessionStorage.setItem("vp-me", JSON.stringify({ session: getSession(), data })); } catch (e) { /* ignore */ }
+        try { window.sessionStorage.setItem(ME_KEY, JSON.stringify({ session: getSession(), data })); } catch (e) { /* ignore */ }
     }
 
     async function requireMe({ allowPending = false } = {}) {
@@ -360,7 +371,7 @@
     async function signOut() {
         const token = getSession();
         setSession(null);
-        try { window.sessionStorage.removeItem("vp-me"); } catch (e) { /* ignore */ }
+        try { window.sessionStorage.removeItem(ME_KEY); } catch (e) { /* ignore */ }
         clearCache();
         if (token) await api("vendor-auth", "sign_out", { session: token });
         location.replace("index.html");
