@@ -24,6 +24,7 @@
         if (d.coi) return t("projects.nextCoi");
         if (!c.contract) return t("projects.nextWaiting");
         if (!c.coi) return t("projects.nextWaitingTpl");
+        if (p.review?.status === "in_review") return t("projects.nextReview");
         return "";
     }
 

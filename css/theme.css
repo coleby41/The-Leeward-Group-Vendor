@@ -488,3 +488,8 @@ body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
 .vp-coisteps__file { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
 .vp-coisteps__name { flex: 1 1 200px; min-width: 0; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
 .vp-coisteps__note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-soft); font-style: italic; }
+
+/* Returned by Leeward (2026-11-10) */
+.vp-returned { margin: 4px 0 0; padding: 10px 12px; border-radius: 6px; border: 1px solid #F1B8B2; background: var(--danger-soft); color: var(--danger); font-size: 14px; }
+.vp-returned--note { margin: 0 0 16px; }
+.vp-step .vp-returned + .vp-tpl { margin-top: 12px; }

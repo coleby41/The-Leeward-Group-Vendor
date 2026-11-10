@@ -164,14 +164,20 @@
         const todo = VP.projectTodo(p);
         const waiting = VP.waitingOnLeeward(p);
         const current = [todo.sign, todo.w9, todo.coi].indexOf(true);
+        // Leeward's review (2026-11-10): returned items carry a note; once
+        // everything is in, the project waits on Leeward's approval.
+        const review = p.review || { status: "open", returned: {} };
+        const inReview = review.status === "in_review";
+        const ret = key => review.returned && review.returned[key] != null
+            ? `<p class="vp-returned" role="alert"><strong>${esc(t("lock.returnedTitle"))}</strong>${review.returned[key] ? ` ${esc(review.returned[key])}` : ""}</p>` : "";
 
         // 1. Contract
         const contractHelp = c.contract ? contractLine(k) : (k.status === "to_sign" ? t("lock.fixContract") : t("lock.contractWaiting"));
-        const s1 = step(c.contract, current === 0, 1, t("lock.contract"), contractHelp, contractActions(k));
+        const s1 = step(c.contract, current === 0, 1, t("lock.contract"), contractHelp, contractActions(k), ret("contract"));
 
         // 2. W-9
         const s2 = step(c.w9, current === 1, 2, t("lock.w9"), t(c.w9 ? "lock.w9Done" : "lock.fixW9"),
-            c.w9 ? "" : `<a class="auth-button auth-button--sm" href="profile.html">${esc(t("lock.w9Btn"))}</a>`);
+            c.w9 ? "" : `<a class="auth-button auth-button--sm" href="profile.html">${esc(t("lock.w9Btn"))}</a>`, ret("w9"));
 
         // 3. COI for this project
         let s3;
@@ -183,7 +189,7 @@
             s3 = step(true, false, 3, t("lock.coi"), help, actions);
         } else {
             // No template yet → no upload form, just the notice.
-            const upload = templateBox(tpl) + (tpl ? `
+            const upload = ret("coi") + templateBox(tpl) + (tpl ? `
                 <form id="coiForm" novalidate>
                     <label class="vp-drop" id="coiDrop">
                         <span class="vp-drop__icon">${ICON_UP}</span>
@@ -207,11 +213,12 @@
                     </div>
                     <div class="vp-lockhead__text">
                         <p class="vp-lockhead__eyebrow">${esc(p.name || "")}</p>
-                        <h1>${esc(waiting ? t("lock.headWaiting") : t(left === 1 ? "lock.headOne" : "lock.headMany", { n: left }))}</h1>
-                        <p>${esc(t(waiting ? "lock.bodyWaiting" : "lock.body"))}</p>
+                        <h1>${esc(inReview ? t("lock.headReview") : waiting ? t("lock.headWaiting") : t(left === 1 ? "lock.headOne" : "lock.headMany", { n: left }))}</h1>
+                        <p>${esc(t(inReview ? "lock.bodyReview" : waiting ? "lock.bodyWaiting" : "lock.body"))}</p>
                     </div>
                 </section>
                 ${f ? `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>` : ""}
+                ${review.note && !inReview ? `<div class="vp-returned vp-returned--note"><strong>${esc(t("lock.noteTitle"))}</strong> ${esc(review.note)}</div>` : ""}
                 <ol class="vp-steps">${s1}${s2}${s3}</ol>
                 <section class="vp-unlocks" aria-labelledby="unlocksTitle">
                     <h2 id="unlocksTitle">${esc(t("lock.unlocks"))}</h2>

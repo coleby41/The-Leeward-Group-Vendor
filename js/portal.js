@@ -150,7 +150,7 @@
     // Bump CACHE_VERSION whenever vendor-api's answers change shape (new or
     // renamed fields). Copies saved by an older version are thrown away, so
     // a page never flashes a stale copy that's missing the new fields.
-    const CACHE_VERSION = "2";
+    const CACHE_VERSION = "3"; // 3: projects carry review (2026-11-10)
     const CACHE_PREFIX = `vp-c:v${CACHE_VERSION}:`;
     const ME_KEY = `vp-me:v${CACHE_VERSION}`;
     // Drop copies left by older versions (they never match again anyway).
