@@ -10,6 +10,10 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/portal.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/theme.css">
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/portal.js"></script>
@@ -17,19 +21,21 @@
 </head>
 <body>
 <main class="main-content">
-  <!-- Locked project (Coleby, 2026-11-01): full-page "finish your
-       paperwork" view — construction worker with a stop sign, one card per
-       requirement (green check = ready, red X = still needed + how to fix
-       it), and a Back to portal home button. No top nav or side nav here. -->
+  <!-- Locked project (2026-11-10 redesign): progress ring + one step per
+       requirement, inside the normal portal (top bar + tabs). -->
   <section class="vp-lock hidden" id="lockView"></section>
 
   <section class="hero-section" id="projHero">
     <div>
-      <p class="eyebrow"><a href="projects.html" style="color: inherit" data-i18n="project.back"></a> · <span data-i18n="project.eyebrow"></span></p>
+      <p class="eyebrow"><a href="projects.html" style="color: inherit" data-i18n="project.back"></a></p>
+      <p class="vp-hero-badge" id="projBadge">&nbsp;</p>
       <h1 id="projName">&nbsp;</h1>
       <p id="projSub">&nbsp;</p>
     </div>
+    <div class="vp-glass-row" id="projGlass"></div>
   </section>
+
+  <section class="vp-strip hidden" id="projStrip" aria-label="Compliance"></section>
 
   <p class="auth-message error hidden" id="pageError" role="alert"></p>
 

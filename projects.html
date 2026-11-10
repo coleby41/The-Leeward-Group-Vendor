@@ -10,24 +10,25 @@
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/portal.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/theme.css">
 <script src="js/config.js"></script>
 <script src="js/i18n.js"></script>
 <script src="js/portal.js"></script>
 </head>
 <body>
 <main class="main-content">
-  <section class="hero-section">
+  <!-- My Projects (2026-11-10 redesign): one card per awarded project with
+       a 3-part progress bar (contract, W-9, COI). -->
+  <div class="vp-page-head">
     <div>
-      <p class="eyebrow" id="heroCompany">&nbsp;</p>
       <h1 data-i18n="projects.title"></h1>
       <p data-i18n="projects.intro"></p>
     </div>
-  </section>
-
-  <div class="card bid-package-card">
-    <div class="card-header"><h2 class="card-title" data-i18n="projects.list"></h2><span class="chip chip--muted" id="projectCount" style="display:none"></span></div>
-    <div id="projectsBody"><p class="auth-inline-copy" data-i18n="loading"></p></div>
   </div>
+  <div id="projectsBody"><p class="auth-inline-copy" data-i18n="loading"></p></div>
 </main>
 <script src="js/projects.js"></script>
 </body>

@@ -5,7 +5,7 @@
      staff tables are reachable from here.
    - Keeps the portal session token in localStorage ("vp-session").
    - English / Spanish (js/i18n.js) with the language circle.
-   - Draws the header + sidebar on signed-in pages.
+   - Draws the top bar, footer and phone tab bar on signed-in pages.
 =========================================================== */
 (function () {
     "use strict";
@@ -58,6 +58,7 @@
         store.set("vp-lang", lang);
         applyI18n(document);
         document.querySelectorAll('.lang-fab input[name="vendor-lang"]').forEach(i => { i.checked = i.value === lang; });
+        document.querySelectorAll("[data-set-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
         if (changed) document.dispatchEvent(new CustomEvent("vp:lang", { detail: { lang } }));
         // Their emails follow this too.
         if (save && changed && getSession()) api("vendor-api", "set_language", { language: lang });
@@ -182,6 +183,9 @@
         return { cached: peek("vendor-api", action, body), fresh: api("vendor-api", action, body) };
     }
     const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+    // Save an answer we already have (e.g. each project from the My Projects
+    // list) as if the server had sent it, so that page opens instantly.
+    function seed(action, body, data) { remember("vendor-api", action, body, data); }
 
     /* ---------- API ---------- */
     async function api(fn, action, body = {}) {
@@ -377,74 +381,104 @@
         location.replace("index.html");
     }
 
+    /* ---------- Signed-in shell (2026-11-10 redesign) ----------
+       Light top bar with the Leeward mark, tabs (Invites, Projects,
+       Company, Help), EN/ES switch and the account menu, the two brand
+       waves as its bottom edge, a navy footer, and on phones a bottom tab
+       bar. Replaces the staff-style dark sidebar. Styles: css/theme.css. */
+    const ICONS = {
+        invites: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M4 9h16"></path><path d="M9 13h6"></path></svg>',
+        projects: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>',
+        profile: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h8l6 6v12z"></path><path d="M14 3v6h6"></path></svg>',
+        faq: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14"></path><path d="M12 17h.01"></path></svg>',
+    };
+    const NAV = [
+        { key: "invites", href: "invites.html", label: "tab.invites", badge: "invites" },
+        { key: "projects", href: "projects.html", label: "tab.projects", badge: "projects" },
+        { key: "profile", href: "profile.html", label: "tab.profile" },
+        { key: "faq", href: "faq.html", label: "tab.faq" },
+    ];
+    const WAVES_STRIP = `<svg class="vp-top__waves" aria-hidden="true" viewBox="0 0 1440 14" preserveAspectRatio="none">
+            <path d="M0 6 C 240 1, 480 12, 720 6 S 1200 1, 1440 6" fill="none" stroke="#29A9E1" stroke-width="1.5" opacity="0.7" vector-effect="non-scaling-stroke"></path>
+            <path d="M0 10 C 260 5, 520 14, 780 9 S 1220 4, 1440 9" fill="none" stroke="#1F74BC" stroke-width="1.5" opacity="0.8" vector-effect="non-scaling-stroke"></path>
+        </svg>`;
+    const LOGO = "assets/leeward-mark.png";
+
+    function langSwitch() {
+        return `<div class="vp-lang" role="group" aria-label="Language / Idioma">
+            <button type="button" data-set-lang="en" aria-pressed="${lang === "en"}">EN</button>
+            <button type="button" data-set-lang="es" aria-pressed="${lang === "es"}">ES</button>
+        </div>`;
+    }
+
     function renderShell(active) {
         const company = me?.company ? (me.company.friendly_name || me.company.name) : "";
         const user = me?.user?.name || me?.user?.email || "";
+        const initial = (user.trim()[0] || "?").toUpperCase();
+        document.body.classList.add("vp-shell");
+
         const header = document.createElement("header");
-        header.className = "header";
+        header.className = "vp-top";
         header.innerHTML = `
-            <div class="header-left">
-                <a class="brand-mark" href="invites.html" style="text-decoration:none;color:inherit">
-                    <div class="brand-mark__icon">LG</div>
-                    <div><div class="brand-title">The Leeward Group</div><div class="brand-subtitle" data-i18n="brand.sub"></div></div>
+            <div class="vp-top__inner">
+                <a class="vp-brand" href="invites.html">
+                    <img src="${LOGO}" alt="" width="40" height="35">
+                    <span class="vp-brand__text"><span class="vp-brand__name">The Leeward Group</span><span class="vp-brand__sub" data-i18n="brand.sub"></span></span>
                 </a>
-                <button type="button" class="menu-btn" id="menuBtn" data-i18n-aria="nav.toggle" aria-expanded="true">☰</button>
-            </div>
-            <div class="header-right">
-                <div class="header-user-area">
-                    <div class="header-user-pill"><span>${esc([user, company].filter(Boolean).join(" · "))}</span></div>
+                <nav class="vp-tabs" aria-label="Main">
+                    ${NAV.map(n => `<a class="vp-tab ${active === n.key ? "is-active" : ""}" href="${n.href}" ${active === n.key ? 'aria-current="page"' : ""}><span data-i18n="${n.label}"></span>${n.badge ? `<span class="vp-count ${n.badge === "projects" ? "vp-count--warn" : ""} hidden" data-badge="${n.badge}"></span>` : ""}</a>`).join("")}
+                </nav>
+                <div class="vp-top__right">
+                    ${langSwitch()}
+                    <details class="vp-account">
+                        <summary aria-label="${esc(user || "Account")}">
+                            <span class="vp-avatar" aria-hidden="true">${esc(initial)}</span>
+                            <span class="vp-account__who"><span class="vp-account__name">${esc(user)}</span><span class="vp-account__co">${esc(company)}</span></span>
+                        </summary>
+                        <div class="vp-account__menu">
+                            <div class="vp-account__menu-lang">${langSwitch()}</div>
+                            <a href="profile.html" data-i18n="nav.profile"></a>
+                            <button type="button" class="vp-signout" data-i18n="nav.signout"></button>
+                        </div>
+                    </details>
                 </div>
+            </div>
+            ${WAVES_STRIP}`;
+
+        const footer = document.createElement("footer");
+        footer.className = "vp-footer";
+        footer.innerHTML = `
+            <div class="vp-footer__inner">
+                <div class="vp-footer__brand"><img src="${LOGO}" alt="" width="32" height="28"><span>The Leeward Group</span></div>
+                <nav aria-label="Footer"><a href="faq.html" data-i18n="nav.faq"></a><a href="profile.html" data-i18n="nav.profile"></a></nav>
+                <span class="vp-footer__copy">© ${new Date().getFullYear()} The Leeward Group · Wilmington, NC</span>
             </div>`;
-        const aside = document.createElement("aside");
-        aside.className = "sidebar";
-        aside.id = "sidebar";
-        aside.innerHTML = `
-            <div class="sidebar-header" data-i18n="nav.header"></div>
-            <nav class="sidebar-nav">
-                <a href="invites.html" class="nav-item ${active === "invites" ? "active" : ""}"><span class="form-logs-nav-icon"></span><span class="nav-text" data-i18n="nav.invites"></span><span class="nav-item-badge hidden" id="navInviteBadge"></span></a>
-                <a href="projects.html" class="nav-item ${active === "projects" ? "active" : ""}"><span class="projects-nav-icon"></span><span class="nav-text" data-i18n="nav.projects"></span><span class="nav-item-badge hidden" id="navProjectBadge"></span></a>
-                <a href="profile.html" class="nav-item ${active === "profile" ? "active" : ""}"><span class="companies-nav-icon"></span><span class="nav-text" data-i18n="nav.profile"></span></a>
-                <a href="faq.html" class="nav-item ${active === "faq" ? "active" : ""}"><span class="docs-nav-icon"></span><span class="nav-text" data-i18n="nav.faq"></span></a>
-            </nav>
-            <div class="sidebar-footer">
-                <div class="footer-pill">${esc(me?.company?.name || "")}</div>
-                <div class="sidebar-brand">Leeward Group</div>
-                <a href="#" class="version vp-signout" style="color: inherit" data-i18n="nav.signout"></a>
-            </div>`;
-        document.body.prepend(aside);
+
+        const tabbar = document.createElement("nav");
+        tabbar.className = "vp-tabbar";
+        tabbar.setAttribute("aria-label", "Main");
+        tabbar.innerHTML = NAV.map(n => `<a href="${n.href}" class="${active === n.key ? "is-active" : ""}" ${active === n.key ? 'aria-current="page"' : ""}><span>${ICONS[n.key]}</span><span data-i18n="${n.label}"></span>${n.badge ? `<span class="vp-count ${n.badge === "projects" ? "vp-count--warn" : ""} hidden" data-badge="${n.badge}"></span>` : ""}</a>`).join("");
+
         document.body.prepend(header);
-        aside.querySelector(".vp-signout").addEventListener("click", e => { e.preventDefault(); signOut(); });
-        applyI18n(header); applyI18n(aside);
-        wireSidebar();
+        document.body.appendChild(footer);
+        document.body.appendChild(tabbar);
+
+        header.querySelector(".vp-signout").addEventListener("click", e => { e.preventDefault(); signOut(); });
+        const acct = header.querySelector(".vp-account");
+        document.addEventListener("click", e => { if (acct.open && !acct.contains(e.target)) acct.open = false; });
+        document.addEventListener("keydown", e => { if (e.key === "Escape") acct.open = false; });
+        header.addEventListener("click", e => {
+            const b = e.target.closest("[data-set-lang]");
+            if (!b) return;
+            setLang(b.dataset.setLang);
+            store.set("vp-lang-picked", "1");
+        });
+        [header, footer, tabbar].forEach(el => applyI18n(el));
         if (active !== "invites") refreshInviteBadge(); // the invites page passes its own list
     }
 
-    // Same behaviour as the staff portal: docked on desktop, drawer on mobile.
-    function wireSidebar() {
-        const MOBILE = 820;
-        const btn = document.getElementById("menuBtn");
-        const sidebar = document.getElementById("sidebar");
-        const main = document.querySelector(".main-content");
-        if (!btn || !sidebar || !main) return;
-        const backdrop = document.createElement("div");
-        backdrop.className = "sidebar-backdrop";
-        backdrop.setAttribute("aria-hidden", "true");
-        document.body.appendChild(backdrop);
-        const isMobile = () => window.innerWidth <= MOBILE;
-        const open = () => { sidebar.classList.remove("hidden"); main.classList.remove("expanded"); if (isMobile()) backdrop.classList.add("visible"); btn.setAttribute("aria-expanded", "true"); };
-        const close = () => { sidebar.classList.add("hidden"); main.classList.add("expanded"); backdrop.classList.remove("visible"); btn.setAttribute("aria-expanded", "false"); };
-        btn.addEventListener("click", () => (sidebar.classList.contains("hidden") ? open() : close()));
-        backdrop.addEventListener("click", close);
-        document.addEventListener("keydown", e => { if (e.key === "Escape" && isMobile() && !sidebar.classList.contains("hidden")) close(); });
-        const fit = () => { if (isMobile()) close(); else open(); };
-        let lastMobile = isMobile();
-        window.addEventListener("resize", () => { if (isMobile() !== lastMobile) { lastMobile = isMobile(); fit(); } });
-        fit();
-    }
-
     async function refreshInviteBadge(list) {
-        const badge = document.getElementById("navInviteBadge");
-        if (!badge) return;
+        if (!document.querySelector("[data-badge]")) return;
         let invites = list;
         if (!invites) {
             const cached = peek("vendor-api", "invites");
@@ -454,15 +488,10 @@
             invites = data.invites;
         }
         const n = invites.filter(i => i.open && (i.status === "sent" || i.status === "viewed")).length;
-        badge.textContent = String(n);
-        badge.classList.toggle("hidden", n === 0);
         // Projects waiting on a COI PDF.
-        const pb = document.getElementById("navProjectBadge");
-        if (pb) {
-            const p = new Set(invites.filter(i => i.coi_needed).map(i => i.project_id)).size;
-            pb.textContent = String(p);
-            pb.classList.toggle("hidden", p === 0);
-        }
+        const p = new Set(invites.filter(i => i.coi_needed).map(i => i.project_id)).size;
+        document.querySelectorAll('[data-badge="invites"]').forEach(b => { b.textContent = String(n); b.classList.toggle("hidden", n === 0); });
+        document.querySelectorAll('[data-badge="projects"]').forEach(b => { b.textContent = String(p); b.classList.toggle("hidden", p === 0); });
     }
 
     /* ---------- boot ---------- */
@@ -481,7 +510,7 @@
         // True when this tab already knows the vendor is approved, so a page can
         // fetch its data in parallel with requireMe() instead of after it.
         approvedCached: () => Boolean(readMeCache()?.company), renderShell, refreshInviteBadge, signOut,
-        peek, swr, same,
+        peek, swr, same, seed,
         get me() { return me; },
         fmtDateTime, fmtShort, fmtDay, fmtMoney, daysLeft, daysLeftText,
         store,
