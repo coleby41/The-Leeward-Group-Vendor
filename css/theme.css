@@ -477,3 +477,14 @@ body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
 .vp-tpl--missing .vp-tpl__text strong { color: var(--warning); }
 .vp-step .vp-tpl + form { margin-top: 12px; }
 .vp-step .vp-tpl { margin-top: 4px; }
+
+/* COI: the 4 steps inside the template box (2026-11-10) */
+.vp-tpl--steps { display: block; padding: 18px 20px; }
+.vp-coisteps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
+.vp-coisteps__item { display: flex; gap: 12px; align-items: flex-start; }
+.vp-coisteps__num { flex: 0 0 26px; height: 26px; border-radius: 50%; background: var(--vp-navy); color: #fff; font-size: 13px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.vp-coisteps__text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-soft); }
+.vp-coisteps__text strong { color: var(--text); font-size: 15px; }
+.vp-coisteps__file { margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 10px 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-alt); }
+.vp-coisteps__name { flex: 1 1 200px; min-width: 0; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.vp-coisteps__note { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-soft); font-style: italic; }

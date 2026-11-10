@@ -107,17 +107,30 @@
                     <span>${esc(t("lock.noTplBody"))}</span>
                 </div>
             </div>`;
+        // Template posted: the 4 steps, in order (2026-11-10), then the note
+        // that Leeward can send back paperwork that doesn't meet them.
+        const li = (n, title, body, extra) => `
+                <li class="vp-coisteps__item">
+                    <span class="vp-coisteps__num" aria-hidden="true">${n}</span>
+                    <div class="vp-coisteps__text"><strong>${esc(title)}</strong><span>${esc(body)}</span>${extra || ""}</div>
+                </li>`;
         return `
-            <div class="vp-tpl">
-                <span class="vp-tpl__icon">${ICON_DOC}</span>
-                <div class="vp-tpl__text">
-                    <strong>${esc(t("project.templateTitle"))} · ${esc(tpl.name)}</strong>
-                    <span>${esc(t("project.templateBody"))}</span>
-                </div>
-                <div class="vp-tpl__actions">
-                    <button type="button" class="workbook-btn" data-view="${esc(tpl.id)}">${esc(t("btn.view"))}</button>
-                    <button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(tpl.id)}">${esc(t("btn.download"))}</button>
-                </div>
+            <div class="vp-tpl vp-tpl--steps">
+                <ol class="vp-coisteps" aria-label="${esc(t("coiSteps.label"))}">
+                    ${li(1, t("coiSteps.s1"), t("coiSteps.s1b"), `
+                        <div class="vp-coisteps__file">
+                            <span class="vp-tpl__icon">${ICON_DOC}</span>
+                            <span class="vp-coisteps__name">${esc(tpl.name)}</span>
+                            <span class="vp-tpl__actions">
+                                <button type="button" class="workbook-btn" data-view="${esc(tpl.id)}">${esc(t("btn.view"))}</button>
+                                <button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(tpl.id)}">${esc(t("btn.download"))}</button>
+                            </span>
+                        </div>`)}
+                    ${li(2, t("coiSteps.s2"), t("coiSteps.s2b"))}
+                    ${li(3, t("coiSteps.s3"), t("coiSteps.s3b"))}
+                    ${li(4, t("coiSteps.s4"), t("coiSteps.s4b"))}
+                </ol>
+                <p class="vp-coisteps__note">${esc(t("coiSteps.reserve"))}</p>
             </div>`;
     }
 
