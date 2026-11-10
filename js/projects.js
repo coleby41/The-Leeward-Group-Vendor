@@ -15,11 +15,15 @@
     const STEPS = ["contract", "w9", "coi"];
 
     // What's left on a locked project, in plain words.
+    // The vendor's own steps come first; otherwise say what Leeward still owes.
     function nextStep(p) {
         const c = p.checklist || {};
-        if (!c.contract) return p.contract?.status === "to_sign" ? t("projects.nextSign") : t("projects.nextWaiting");
-        if (!c.w9) return t("projects.nextW9");
-        if (!c.coi) return t("projects.nextCoi");
+        const d = VP.projectTodo(p);
+        if (d.sign) return t("projects.nextSign");
+        if (d.w9) return t("projects.nextW9");
+        if (d.coi) return t("projects.nextCoi");
+        if (!c.contract) return t("projects.nextWaiting");
+        if (!c.coi) return t("projects.nextWaitingTpl");
         return "";
     }
 
@@ -30,9 +34,14 @@
         const scope = p.scopes[0] || {};
         const more = p.scopes.length > 1 ? ` ${t("projects.moreScopes", { n: p.scopes.length - 1 })}` : "";
         let status, btn;
-        if (p.locked) {
+        if (p.locked && VP.waitingOnLeeward(p)) {
+            // Nothing for the vendor to do — don't say "Action required".
+            status = `<span class="vp-badge vp-badge--info">${esc(t("projects.waiting"))}</span>`;
+            btn = `<a class="vp-btn-ghost" href="${href}">${esc(t("projects.viewStatus"))}</a>`;
+        } else if (p.locked) {
+            const d = VP.projectTodo(p);
             status = `<span class="vp-badge vp-badge--warn">${esc(t("projects.actionRequired"))}</span>`;
-            btn = `<a class="auth-button" href="${href}">${esc(t(!c.contract && p.contract?.status === "to_sign" ? "home.signBtn" : !c.coi && c.contract && c.w9 ? "project.coiUpload" : "projects.complete"))}</a>`;
+            btn = `<a class="auth-button" href="${href}">${esc(t(d.sign ? "home.signBtn" : d.coi && !d.w9 ? "project.coiUpload" : "projects.complete"))}</a>`;
         } else {
             status = p.coi.needed
                 ? `<span class="vp-badge vp-badge--warn">${esc(t("status.coi_needed"))}</span>`

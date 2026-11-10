@@ -494,6 +494,24 @@
         document.querySelectorAll('[data-badge="projects"]').forEach(b => { b.textContent = String(p); b.classList.toggle("hidden", p === 0); });
     }
 
+    /* ---------- project paperwork: whose turn is it? (2026-11-10) ---------- */
+    // What the vendor can do right now on a locked project. A contract Leeward
+    // hasn't sent yet, or a COI with no template posted, isn't the vendor's move.
+    function projectTodo(p) {
+        const c = (p && p.checklist) || {};
+        return {
+            sign: !c.contract && p?.contract?.status === "to_sign",
+            w9: !c.w9,
+            coi: !c.coi && Boolean(p?.coi_template),
+        };
+    }
+    // Locked, but nothing left for the vendor to do: waiting on The Leeward Group.
+    function waitingOnLeeward(p) {
+        if (!p || !p.locked) return false;
+        const d = projectTodo(p);
+        return !d.sign && !d.w9 && !d.coi;
+    }
+
     /* ---------- boot ---------- */
     function boot() {
         applyI18n(document);
@@ -513,6 +531,6 @@
         peek, swr, same, seed,
         get me() { return me; },
         fmtDateTime, fmtShort, fmtDay, fmtMoney, daysLeft, daysLeftText,
-        store,
+        store, projectTodo, waitingOnLeeward,
     };
 })();

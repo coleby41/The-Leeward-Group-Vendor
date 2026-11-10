@@ -72,7 +72,7 @@
             state.projects.forEach(p => {
                 if (!p.locked) return;
                 if (p.contract?.status === "to_sign") list.push(action(t("home.kindContract"), ICON_PEN, true, t("home.signContract"), p.name, projectLink(p.id), t("home.signBtn")));
-                if (!p.checklist?.coi) list.push(action(t("home.kindInsurance"), ICON_SHIELD, true, t("home.coiNeeded"), t("home.coiFor", { project: p.name }), projectLink(p.id), t("project.coiUpload")));
+                if (!p.checklist?.coi && p.coi_template) list.push(action(t("home.kindInsurance"), ICON_SHIELD, true, t("home.coiNeeded"), t("home.coiFor", { project: p.name }), projectLink(p.id), t("project.coiUpload")));
                 if (!p.checklist?.w9) w9Needed = true;
             });
             if (w9Needed) list.push(action(t("home.kindCompany"), ICON_DOC, true, t("home.w9Needed"), t("home.w9Body"), "profile.html", t("lock.w9Btn")));

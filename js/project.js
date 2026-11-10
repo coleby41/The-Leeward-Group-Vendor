@@ -147,7 +147,10 @@
         const done = [c.contract, c.w9, c.coi];
         const doneCount = done.filter(Boolean).length;
         const left = 3 - doneCount;
-        const current = done.indexOf(false);
+        // Highlight the first step the vendor can act on (none when waiting on Leeward).
+        const todo = VP.projectTodo(p);
+        const waiting = VP.waitingOnLeeward(p);
+        const current = [todo.sign, todo.w9, todo.coi].indexOf(true);
 
         // 1. Contract
         const contractHelp = c.contract ? contractLine(k) : (k.status === "to_sign" ? t("lock.fixContract") : t("lock.contractWaiting"));
@@ -191,8 +194,8 @@
                     </div>
                     <div class="vp-lockhead__text">
                         <p class="vp-lockhead__eyebrow">${esc(p.name || "")}</p>
-                        <h1>${esc(t(left === 1 ? "lock.headOne" : "lock.headMany", { n: left }))}</h1>
-                        <p>${esc(t("lock.body"))}</p>
+                        <h1>${esc(waiting ? t("lock.headWaiting") : t(left === 1 ? "lock.headOne" : "lock.headMany", { n: left }))}</h1>
+                        <p>${esc(t(waiting ? "lock.bodyWaiting" : "lock.body"))}</p>
                     </div>
                 </section>
                 ${f ? `<p class="auth-message ${f.type}" role="status">${esc(f.text)}</p>` : ""}
