@@ -464,3 +464,16 @@ body.vp-shell .hero-section .eyebrow a::before { content: "← "; }
 body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
 .bid-review-grid .table-wrap { overflow-x: auto; }
 .vp-auth-logo { width: 40px; height: 35px; object-fit: contain; flex: 0 0 auto; }
+
+/* COI template row on the project's COI step (2026-11-10) */
+.vp-tpl { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); padding: 14px 16px; }
+.vp-tpl__icon { width: 40px; height: 40px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.vp-tpl__text { flex: 1 1 240px; min-width: 0; display: flex; flex-direction: column; gap: 2px; font-size: 14px; color: var(--text-soft); }
+.vp-tpl__text strong { color: var(--text); font-size: 15px; overflow-wrap: anywhere; }
+.vp-tpl__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.vp-tpl__actions .workbook-btn { width: auto; margin: 0; min-height: 40px; }
+.vp-tpl--missing { border-color: #E9C79B; background: var(--warning-soft); }
+.vp-tpl--missing .vp-tpl__icon { background: #FFFFFF; color: var(--warning); }
+.vp-tpl--missing .vp-tpl__text strong { color: var(--warning); }
+.vp-step .vp-tpl + form { margin-top: 12px; }
+.vp-step .vp-tpl { margin-top: 4px; }

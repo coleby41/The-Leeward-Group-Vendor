@@ -92,6 +92,35 @@
        once everything is in. */
     const ICON_OK = `<svg class="vp-step__icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2E9E6B"/><path d="M7 12.4l3.3 3.3L17.2 8.8" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
     const ICON_LOCK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>`;
+    const ICON_DOC = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path><path d="M14 3v6h6"></path></svg>`;
+    const ICON_WAIT = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 7v5l3 2"></path></svg>`;
+
+    // The project's COI template (posted by Leeward staff on the project's Bid Invites page).
+    // With a template: a row with View + Download. Without one: a clear notice, and the
+    // COI upload stays closed until staff post it (vendor-api enforces this too).
+    function templateBox(tpl) {
+        if (!tpl) return `
+            <div class="vp-tpl vp-tpl--missing" role="status">
+                <span class="vp-tpl__icon">${ICON_WAIT}</span>
+                <div class="vp-tpl__text">
+                    <strong>${esc(t("lock.noTplTitle"))}</strong>
+                    <span>${esc(t("lock.noTplBody"))}</span>
+                </div>
+            </div>`;
+        return `
+            <div class="vp-tpl">
+                <span class="vp-tpl__icon">${ICON_DOC}</span>
+                <div class="vp-tpl__text">
+                    <strong>${esc(t("project.templateTitle"))} · ${esc(tpl.name)}</strong>
+                    <span>${esc(t("project.templateBody"))}</span>
+                </div>
+                <div class="vp-tpl__actions">
+                    <button type="button" class="workbook-btn" data-view="${esc(tpl.id)}">${esc(t("btn.view"))}</button>
+                    <button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(tpl.id)}">${esc(t("btn.download"))}</button>
+                </div>
+            </div>`;
+    }
+
     const ICON_UP = `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4"></path><path d="M7 9l5-5 5 5"></path><path d="M4 20h16"></path></svg>`;
 
     function step(done, current, num, title, help, actions, extra) {
@@ -137,8 +166,8 @@
                 <button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(coi.file.id)}">${esc(t("btn.download"))}</button>` : "";
             s3 = step(true, false, 3, t("lock.coi"), help, actions);
         } else {
-            const actions = tpl ? `<button type="button" class="workbook-btn workbook-btn--download" data-file="${esc(tpl.id)}">${esc(t("project.templateDownload"))}</button>` : "";
-            const upload = `
+            // No template yet → no upload form, just the notice.
+            const upload = templateBox(tpl) + (tpl ? `
                 <form id="coiForm" novalidate>
                     <label class="vp-drop" id="coiDrop">
                         <span class="vp-drop__icon">${ICON_UP}</span>
@@ -149,8 +178,8 @@
                     </label>
                     <p class="auth-message hidden" id="coiMessage" role="alert"></p>
                     <button type="submit" class="auth-button" id="coiUploadBtn">${esc(t("project.coiUpload"))}</button>
-                </form>`;
-            s3 = step(false, current === 2, 3, t("lock.coi"), t("lock.fixCoi"), actions, upload);
+                </form>` : "");
+            s3 = step(false, current === 2, 3, t("lock.coi"), t(tpl ? "lock.fixCoi" : "lock.fixCoiNoTpl"), "", upload);
         }
 
         $("lockView").innerHTML = `
@@ -258,14 +287,7 @@
             : t("project.companyNoDate");
         $("coiChip").innerHTML = chip();
         $("docsBody").innerHTML = `
-            ${exempt ? "" : `<div class="vendor-profile-section">
-                <span class="company-card-label">${esc(t("project.templateTitle"))}</span>
-                ${tpl ? `<p class="auth-inline-copy" style="margin:4px 0 8px">${esc(t("project.templateBody"))}</p>
-                <div class="bid-file-row">
-                    <span class="bid-file-row-name">${esc(tpl.name)}</span>
-                    <button type="button" class="workbook-btn workbook-btn--download" style="flex:0 0 auto" data-file="${esc(tpl.id)}">${esc(t("project.templateDownload"))}</button>
-                </div>` : `<p class="auth-inline-copy" style="margin:4px 0 0">${esc(t("project.noTemplate"))}</p>`}
-            </div>`}
+            ${exempt ? "" : `<div class="vendor-profile-section">${templateBox(tpl)}</div>`}
             <div class="vendor-profile-section">
                 <span class="company-card-label">${esc(t("project.coiTitle"))}</span>
                 <p class="auth-inline-copy" style="margin:4px 0 8px">${esc(exempt ? t("project.coiExempt") : c.file ? "" : t("project.coiNeeded"))}</p>
@@ -275,7 +297,7 @@
                     <button type="button" class="workbook-btn" style="flex:0 0 auto" data-view="${esc(c.file.id)}">${esc(t("btn.view"))}</button>
                     <button type="button" class="workbook-btn workbook-btn--download" style="flex:0 0 auto" data-file="${esc(c.file.id)}">${esc(t("btn.download"))}</button>
                 </div>` : ""}
-                ${exempt ? "" : `
+                ${exempt || !tpl ? "" : `
                 <form class="auth-form vp-doc-form" id="coiForm" novalidate>
                     <label class="auth-field">${esc(t("coi.file"))}<input type="file" name="file" accept="application/pdf,.pdf"></label>
                     <p class="auth-message hidden" id="coiMessage" role="alert"></p>
