@@ -514,6 +514,14 @@
 
     /* ---------- boot ---------- */
     function boot() {
+        // Pages with the Seahawk Cove photo background get its caption, top right (2026-11-11).
+        const bg = document.querySelector(".vp-apply-bg");
+        if (bg && !document.querySelector(".vp-photo-credit")) {
+            const cap = document.createElement("p");
+            cap.className = "vp-photo-credit";
+            cap.setAttribute("data-i18n-html", "bg.creditHtml");
+            bg.prepend(cap);
+        }
         applyI18n(document);
         mountLangFab();
         document.querySelectorAll(".lang-fab input").forEach(i => { i.checked = i.value === lang; });
