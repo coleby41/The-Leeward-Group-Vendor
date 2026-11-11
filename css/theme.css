@@ -563,3 +563,23 @@ body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
 
 /* Photo-background pages: card centered on the screen (2026-11-11) */
 .vp-apply-bg { place-items: center; min-height: 100vh; min-height: 100dvh; }
+
+/* terms.html: a full page document (2026-11-11) */
+.vp-terms-page { background: var(--surface); margin: 0; min-height: 100vh; }
+.vp-terms-top { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.95); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); border-bottom: 1px solid var(--border); }
+.vp-terms-top::after { content: ""; display: block; height: 14px; background: var(--vp-waves-light) center / 100% 100% no-repeat; margin-bottom: -14px; pointer-events: none; }
+.vp-terms-top__inner { max-width: var(--vp-max); margin: 0 auto; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.vp-terms-brand { text-decoration: none; color: inherit; }
+.vp-terms-top__actions { display: flex; align-items: center; gap: 16px; }
+.vp-terms-top__actions .auth-button { width: auto; margin: 0; min-height: 40px; }
+.vp-terms-main { max-width: 860px; margin: 0 auto; padding: 40px 24px 96px; }
+.vp-terms-main .vp-eula__lang { margin-bottom: 20px; }
+.vp-terms-page .vp-terms { font-size: 15px; line-height: 1.7; }
+.vp-terms-page .vp-terms h1 { font-size: 26px; margin-bottom: 8px; }
+.vp-terms-page .vp-terms h2 { font-size: 17px; margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+@media (max-width: 640px) {
+  .vp-terms-top__inner { padding: 10px 16px; }
+  .vp-terms-top__actions .auth-link { display: none; }
+  .vp-terms-main { padding: 24px 16px 80px; }
+}
+@media print { .vp-terms-top, .lang-fab { display: none !important; } .vp-terms-main { padding: 0; max-width: none; } }

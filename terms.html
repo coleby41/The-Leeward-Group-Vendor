@@ -20,28 +20,26 @@
 <script src="js/terms.js"></script>
 <script src="js/terms-dialog.js"></script>
 </head>
-<body>
-<div class="auth-page auth-page--login vp-auth-page vp-apply-bg">
-  <div class="auth-shell auth-shell--solo vp-terms-shell">
-    <div class="auth-card">
-      <div class="auth-card__brand">
-        <div class="brand-mark">
-          <img class="vp-auth-logo" src="assets/leeward-mark.png" alt="" width="40" height="35">
-          <div>
-            <div class="brand-title">The Leeward Group</div>
-            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
-          </div>
-        </div>
+<body class="vp-terms-page">
+<header class="vp-terms-top">
+  <div class="vp-terms-top__inner">
+    <a href="index.html" class="brand-mark vp-terms-brand">
+      <img class="vp-auth-logo" src="assets/leeward-mark.png" alt="" width="40" height="35">
+      <div>
+        <div class="brand-title">The Leeward Group</div>
+        <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
       </div>
-      <p class="vp-eula__lang hidden" id="termsLang" data-i18n="terms.englishNote"></p>
-      <div class="vp-terms" id="termsBody" lang="en"></div>
-      <div class="vp-terms-actions">
-        <button type="button" class="auth-button auth-button--secondary" id="termsPrint" data-i18n="terms.print"></button>
-        <a href="apply.html" class="auth-link" data-i18n="terms.backApply"></a>
-      </div>
+    </a>
+    <div class="vp-terms-top__actions">
+      <a href="apply.html" class="auth-link" data-i18n="terms.backApply"></a>
+      <button type="button" class="auth-button auth-button--secondary" id="termsPrint" data-i18n="terms.print"></button>
     </div>
   </div>
-</div>
+</header>
+<main class="vp-terms-main">
+  <p class="vp-eula__lang hidden" id="termsLang" data-i18n="terms.englishNote"></p>
+  <article class="vp-terms" id="termsBody" lang="en"></article>
+</main>
 <script>
 (function () {
     document.getElementById("termsBody").innerHTML = window.VP_TERMS.HTML;
