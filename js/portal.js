@@ -536,7 +536,7 @@
             cap.setAttribute("data-i18n-html", "bg.creditHtml");
             bg.prepend(cap);
         }
-        // Public pages that opt in with data-public-footer (just the Vendor FAQ) get the
+        // Public pages that opt in with data-public-footer get the
         // public footer. Not the sign-in pages, the application form or the Terms.
         // Signed-in pages get theirs from renderShell.
         if (document.querySelector("[data-public-footer]") && !document.querySelector(".vp-footer")) {

@@ -588,3 +588,7 @@ body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
 body.vp-public { display: flex; flex-direction: column; min-height: 100vh; }
 body.vp-public > .vp-auth-page { flex: 1 0 auto; }
 .vp-footer a[aria-current="page"] { color: #FFFFFF; font-weight: 600; }
+
+/* FAQ section headings (2026-11-11) */
+.faq-list .faq-section { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); margin: 22px 0 6px; }
+.faq-list .faq-section:first-child { margin-top: 4px; }
