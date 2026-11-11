@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en" data-title="title.terms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#ffffff">
+<title>Vendor Portal – Terms of Use</title>
+<link rel="icon" type="image/png" href="assets/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/portal.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/theme.css">
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/portal.js"></script>
+<script src="js/terms.js"></script>
+<script src="js/terms-dialog.js"></script>
+</head>
+<body>
+<div class="auth-page auth-page--login vp-auth-page">
+  <div class="auth-shell auth-shell--solo vp-terms-shell">
+    <div class="auth-card">
+      <div class="auth-card__brand">
+        <div class="brand-mark">
+          <img class="vp-auth-logo" src="assets/leeward-mark.png" alt="" width="40" height="35">
+          <div>
+            <div class="brand-title">The Leeward Group</div>
+            <div class="brand-subtitle" data-i18n="brand.sub">Vendor Portal</div>
+          </div>
+        </div>
+      </div>
+      <p class="vp-eula__lang hidden" id="termsLang" data-i18n="terms.englishNote"></p>
+      <div class="vp-terms" id="termsBody" lang="en"></div>
+      <div class="vp-terms-actions">
+        <button type="button" class="auth-button auth-button--secondary" id="termsPrint" data-i18n="terms.print"></button>
+        <a href="apply.html" class="auth-link" data-i18n="terms.backApply"></a>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function () {
+    document.getElementById("termsBody").innerHTML = window.VP_TERMS.HTML;
+    document.getElementById("termsPrint").addEventListener("click", () => VP.printTerms());
+    const lang = () => document.getElementById("termsLang").classList.toggle("hidden", VP.lang !== "es");
+    lang(); document.addEventListener("vp:lang", lang);
+})();
+</script>
+</body>
+</html>
