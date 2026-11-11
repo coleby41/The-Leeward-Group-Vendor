@@ -445,14 +445,7 @@
             </div>
             ${WAVES_STRIP}`;
 
-        const footer = document.createElement("footer");
-        footer.className = "vp-footer";
-        footer.innerHTML = `
-            <div class="vp-footer__inner">
-                <div class="vp-footer__brand"><img src="${LOGO}" alt="" width="32" height="28"><span>The Leeward Group</span></div>
-                <nav aria-label="Footer"><a href="faq.html" data-i18n="nav.faq"></a><a href="profile.html" data-i18n="nav.profile"></a></nav>
-                <span class="vp-footer__copy">© ${new Date().getFullYear()} The Leeward Group · Wilmington, NC</span>
-            </div>`;
+        const footer = makeFooter(true);
 
         const tabbar = document.createElement("nav");
         tabbar.className = "vp-tabbar";
@@ -512,6 +505,27 @@
         return !d.sign && !d.w9 && !d.coi;
     }
 
+    /* ---------- footer: every page's links (2026-11-11) ---------- */
+    // Signed in: the portal's pages. Signed out (sign-in, apply, FAQ, terms…):
+    // the public pages. Both carry the Terms of Use.
+    const FOOTER_LINKS = {
+        signedIn: [["invites.html", "nav.invites"], ["projects.html", "nav.projects"], ["profile.html", "nav.profile"], ["faq.html", "nav.faq"], ["terms.html", "footer.terms"]],
+        public: [["index.html", "footer.signin"], ["apply.html", "footer.apply"], ["faq.html", "nav.faq"], ["terms.html", "footer.terms"]],
+    };
+    function makeFooter(signedIn) {
+        const here = (location.pathname.split("/").pop() || "index.html").toLowerCase();
+        const footer = document.createElement("footer");
+        footer.className = "vp-footer";
+        footer.innerHTML = `
+            <div class="vp-footer__inner">
+                <div class="vp-footer__brand"><img src="${LOGO}" alt="" width="32" height="28"><span>The Leeward Group</span></div>
+                <nav aria-label="Footer">${FOOTER_LINKS[signedIn ? "signedIn" : "public"].map(([href, key]) =>
+                    `<a href="${href}" data-i18n="${key}"${href === here ? ' aria-current="page"' : ""}></a>`).join("")}</nav>
+                <span class="vp-footer__copy">© ${new Date().getFullYear()} The Leeward Group · Wilmington, NC</span>
+            </div>`;
+        return footer;
+    }
+
     /* ---------- boot ---------- */
     function boot() {
         // Pages with the Seahawk Cove photo background get its caption, top right (2026-11-11).
@@ -521,6 +535,13 @@
             cap.className = "vp-photo-credit";
             cap.setAttribute("data-i18n-html", "bg.creditHtml");
             bg.prepend(cap);
+        }
+        // Public pages that opt in with data-public-footer (just the Vendor FAQ) get the
+        // public footer. Not the sign-in pages, the application form or the Terms.
+        // Signed-in pages get theirs from renderShell.
+        if (document.querySelector("[data-public-footer]") && !document.querySelector(".vp-footer")) {
+            document.body.classList.add("vp-public");
+            document.body.appendChild(makeFooter(false));
         }
         applyI18n(document);
         mountLangFab();

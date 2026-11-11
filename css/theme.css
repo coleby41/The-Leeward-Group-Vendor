@@ -583,3 +583,8 @@ body.vp-shell .hero-section .vp-hero-badge { margin: 6px 0 12px; }
   .vp-terms-main { padding: 24px 16px 80px; }
 }
 @media print { .vp-terms-top, .lang-fab { display: none !important; } .vp-terms-main { padding: 0; max-width: none; } }
+
+/* Footer on signed-out pages + current page (2026-11-11) */
+body.vp-public { display: flex; flex-direction: column; min-height: 100vh; }
+body.vp-public > .vp-auth-page { flex: 1 0 auto; }
+.vp-footer a[aria-current="page"] { color: #FFFFFF; font-weight: 600; }
