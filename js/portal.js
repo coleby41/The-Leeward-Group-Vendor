@@ -61,7 +61,7 @@
         document.querySelectorAll("[data-set-lang]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.setLang === lang)));
         if (changed) document.dispatchEvent(new CustomEvent("vp:lang", { detail: { lang } }));
         // Their emails follow this too.
-        if (save && changed && getSession()) api("vendor-api", "set_language", { language: lang });
+        if (save && changed && getSession() && !isPreview()) api("vendor-api", "set_language", { language: lang });
     }
 
     function mountLangFab() {
@@ -136,8 +136,27 @@
     }
 
     /* ---------- session ---------- */
-    const getSession = () => store.get("vp-session");
-    const setSession = token => store.set("vp-session", token || null);
+    // Staff "View as vendor" preview (2026-11-12): the staff portal opens the
+    // portal in a frame at …#preview=<token>. That read-only token lives in
+    // sessionStorage (this tab/frame only) and never touches a real vendor's
+    // saved session.
+    const PREVIEW_KEY = "vp-preview";
+    const previewToken = () => { try { return window.sessionStorage.getItem(PREVIEW_KEY); } catch (e) { return null; } };
+    (function takePreviewToken() {
+        const m = /(?:^#|&)preview=([^&]+)/.exec(location.hash || "");
+        if (!m) return;
+        try {
+            Object.keys(window.sessionStorage).forEach(k => window.sessionStorage.removeItem(k)); // fresh: no cached pages
+            window.sessionStorage.setItem(PREVIEW_KEY, decodeURIComponent(m[1]));
+        } catch (e) { /* storage blocked */ }
+        history.replaceState(null, "", location.pathname + location.search);
+    })();
+    const isPreview = () => Boolean(previewToken());
+    const getSession = () => previewToken() || store.get("vp-session");
+    const setSession = token => {
+        if (isPreview()) { try { window.sessionStorage.removeItem(PREVIEW_KEY); } catch (e) { /* ignore */ } if (!token) return; }
+        store.set("vp-session", token || null);
+    };
 
     /* ---------- page data cache (instant pages) ----------
        Every page used to wait on the server before showing anything. Now
@@ -373,12 +392,13 @@
     }
 
     async function signOut() {
+        const wasPreview = isPreview();
         const token = getSession();
         setSession(null);
         try { window.sessionStorage.removeItem(ME_KEY); } catch (e) { /* ignore */ }
         clearCache();
         if (token) await api("vendor-auth", "sign_out", { session: token });
-        location.replace("index.html");
+        location.replace(wasPreview ? "index.html#preview-ended" : "index.html");
     }
 
     /* ---------- Signed-in shell (2026-11-10 redesign) ----------
@@ -416,6 +436,7 @@
         const user = me?.user?.name || me?.user?.email || "";
         const initial = (user.trim()[0] || "?").toUpperCase();
         document.body.classList.add("vp-shell");
+        if (me?.preview) mountPreview(company);
 
         const header = document.createElement("header");
         header.className = "vp-top";
@@ -505,6 +526,36 @@
         return !d.sign && !d.w9 && !d.coi;
     }
 
+    /* ---------- staff preview: banner + view only (2026-11-12) ---------- */
+    // The server refuses every change on a preview session (view_only); this
+    // just makes that obvious and stops forms before they try.
+    function mountPreview(company) {
+        if (document.querySelector(".vp-preview-bar")) return;
+        document.body.classList.add("vp-preview");
+        const bar = document.createElement("div");
+        bar.className = "vp-preview-bar";
+        bar.setAttribute("role", "status");
+        bar.innerHTML = `<strong>${esc(t("preview.title"))}</strong> <span>${esc(t("preview.body", { company }))}</span>`;
+        document.body.prepend(bar);
+        document.addEventListener("submit", e => {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            previewToast();
+        }, true);
+        document.querySelectorAll('input[type="file"]').forEach(i => { i.disabled = true; });
+        new MutationObserver(() => document.querySelectorAll('input[type="file"]:not([disabled])').forEach(i => { i.disabled = true; }))
+            .observe(document.body, { childList: true, subtree: true });
+    }
+    let toastTimer = null;
+    function previewToast() {
+        let el = document.querySelector(".vp-preview-toast");
+        if (!el) { el = document.createElement("div"); el.className = "vp-preview-toast"; el.setAttribute("role", "alert"); document.body.appendChild(el); }
+        el.textContent = t("err.view_only");
+        el.classList.add("is-on");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove("is-on"), 3500);
+    }
+
     /* ---------- footer: every page's links (2026-11-11) ---------- */
     // Signed in: the portal's pages. Signed out (sign-in, apply, FAQ, terms…):
     // the public pages. Both carry the Terms of Use.
@@ -560,6 +611,6 @@
         peek, swr, same, seed,
         get me() { return me; },
         fmtDateTime, fmtShort, fmtDay, fmtMoney, daysLeft, daysLeftText,
-        store, projectTodo, waitingOnLeeward,
+        store, projectTodo, waitingOnLeeward, isPreview,
     };
 })();

@@ -601,3 +601,10 @@ body.vp-terms-page { overflow-x: hidden; overflow-y: auto; }
 /* The Terms box in the popup: smooth touch scrolling, and the scroll stays in the box. */
 .vp-eula__doc { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
 .vp-eula-overlay { overscroll-behavior: contain; }
+
+/* Staff "View as vendor" preview (2026-11-12) */
+.vp-preview-bar { position: sticky; top: 0; z-index: 80; padding: 8px 16px; text-align: center; font-size: 13px; background: #FDF0DF; color: #7A3606; border-bottom: 1px solid #E9C79B; }
+.vp-preview-bar strong { margin-right: 6px; }
+body.vp-preview .vp-top { top: 0; }
+.vp-preview-toast { position: fixed; left: 50%; bottom: 96px; transform: translate(-50%, 20px); opacity: 0; pointer-events: none; z-index: 2000; background: var(--vp-navy); color: #fff; padding: 10px 16px; border-radius: 6px; font-size: 14px; box-shadow: 0 8px 24px rgba(11,37,69,.3); transition: opacity .2s, transform .2s; max-width: 90vw; text-align: center; }
+.vp-preview-toast.is-on { opacity: 1; transform: translate(-50%, 0); }
