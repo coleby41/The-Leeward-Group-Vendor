@@ -592,3 +592,12 @@ body.vp-public > .vp-auth-page { flex: 1 0 auto; }
 /* FAQ section headings (2026-11-11) */
 .faq-list .faq-section { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-soft); margin: 22px 0 6px; }
 .faq-list .faq-section:first-child { margin-top: 4px; }
+
+/* Terms must scroll (2026-11-12). styles.css sets `body { overflow: hidden }`
+   for the staff dashboard layout; the full-page terms.html has no scrolling
+   region of its own, so let the page itself scroll. */
+html:has(body.vp-terms-page), body.vp-terms-page { height: auto; }
+body.vp-terms-page { overflow-x: hidden; overflow-y: auto; }
+/* The Terms box in the popup: smooth touch scrolling, and the scroll stays in the box. */
+.vp-eula__doc { -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+.vp-eula-overlay { overscroll-behavior: contain; }
