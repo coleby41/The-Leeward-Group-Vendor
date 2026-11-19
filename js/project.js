@@ -1,7 +1,10 @@
 /* One project folder: the scopes awarded on it, this project's COI PDF and
    contract. Locked (checklist only) until the contract is signed, a W-9 is
    on file and the COI is uploaded. The contract is signed right here
-   (sign_contract): typed name + drawn signature + "I agree". */
+   (sign_contract): typed name + drawn signature + "I agree".
+   A contract made with Leeward's Contract Builder (contract.generated,
+   2026-11-19) is initialed page by page first (every page, contract and
+   exhibits), then signed; Leeward's Project Manager signs after the vendor. */
 (async function () {
     "use strict";
     const $ = id => document.getElementById(id);
@@ -48,7 +51,7 @@
         if (k.status === "to_sign" && k.file) return `
             <button type="button" class="workbook-btn" style="flex:0 0 auto" data-view="${esc(k.file.id)}">${esc(t("contract.read"))}</button>
             <button type="button" class="auth-button auth-button--sm" style="flex:0 0 auto;margin:0" data-sign="1">${esc(t("lock.signBtn"))}</button>`;
-        const f = k.signed_file || k.file;
+        const f = k.countersigned_file || k.signed_file || k.file;
         if (k.status === "signed" && f) return `
             <button type="button" class="workbook-btn" style="flex:0 0 auto" data-view="${esc(f.id)}">${esc(t("btn.view"))}</button>
             <button type="button" class="workbook-btn workbook-btn--download" style="flex:0 0 auto" data-file="${esc(f.id)}">${esc(t("btn.download"))}</button>`;
@@ -56,9 +59,10 @@
     }
 
     function contractLine(k) {
-        if (k.status === "signed") return k.signed_in_portal && k.signer_name
+        if (k.status === "signed" && k.countersigned_file) return t("contract.bothSigned", { date: VP.fmtDay(k.countersigned_at) });
+        if (k.status === "signed") return (k.signed_in_portal && k.signer_name
             ? t("contract.signedBy", { name: k.signer_name, date: VP.fmtDay(k.signed_at) })
-            : t("contract.signed", { date: VP.fmtDay(k.signed_at) });
+            : t("contract.signed", { date: VP.fmtDay(k.signed_at) })) + (k.generated ? ` ${t("contract.leewardNext")}` : "");
         if (k.status === "to_sign") return t("contract.toSign");
         if (k.status === "not_needed") return t("contract.notNeeded");
         return t("lock.contractWaiting");
@@ -273,7 +277,7 @@
         $("contractBody").innerHTML = `
             <div class="vendor-profile-section">
                 <p class="auth-inline-copy" style="margin:0 0 8px">${esc(contractLine(k))}</p>
-                ${(k.signed_file || k.file) ? `<div class="bid-file-row"><span class="bid-file-row-name">${esc((k.signed_file || k.file).name)}</span>${contractActions(k)}</div>` : ""}
+                ${(k.countersigned_file || k.signed_file || k.file) ? `<div class="bid-file-row"><span class="bid-file-row-name">${esc((k.countersigned_file || k.signed_file || k.file).name)}</span>${contractActions(k)}</div>` : ""}
             </div>`;
     }
 
@@ -450,6 +454,21 @@
         });
     }
 
+    // "Spencer Dye" -> "SD"
+    function initialsOf(name) {
+        return String(name || "").split(/\s+/).filter(Boolean).map(w => w[0]).join("").slice(0, 4).toUpperCase();
+    }
+    // Server page labels ("Page 3", "Exhibit B", "Exhibit D1 (page 2)") in the vendor's language.
+    function pageLabel(label) {
+        let m = /^Page (\d+)$/.exec(label);
+        if (m) return t("init.page", { n: m[1] });
+        m = /^Exhibit (\S+) \(page (\d+)\)$/.exec(label);
+        if (m) return t("init.exhibitPage", { x: m[1], n: m[2] });
+        m = /^Exhibit (\S+)$/.exec(label);
+        if (m) return t("init.exhibit", { x: m[1] });
+        return label;
+    }
+
     // Sign the contract: typed name, optional title, drawn signature, "I agree".
     function openSign() {
         const k = state.project.contract;
@@ -462,6 +481,16 @@
                 <h2 id="signTitle">${esc(t("sign.title"))}</h2>
                 <p class="auth-inline-copy" style="margin:0 0 12px">${esc(t("sign.intro", { name: k.file?.name || "" }))}</p>
                 <form class="auth-form" id="signForm" novalidate>
+                    ${k.generated ? `
+                    <div class="vp-init" data-field="initialed">
+                        <p class="auth-inline-copy" style="margin:0">${esc(t("init.intro"))}</p>
+                        <label class="auth-field" data-field="initials">${esc(t("init.yours"))}<input type="text" name="initials" maxlength="6" autocomplete="off" value="${esc(initialsOf(me.user?.name || ""))}"></label>
+                        <div class="vp-init-head"><span class="company-card-label" id="initCount"></span>
+                            <button type="button" class="auth-link" data-init-read>${esc(t("contract.read"))}</button></div>
+                        <ol class="vp-init-list" id="initList">${k.pages.map((label, i) => `
+                            <li class="vp-init-row" data-page="${i}"><span class="vp-init-label">${esc(pageLabel(label))}</span>
+                                <button type="button" class="workbook-btn vp-init-btn" data-init="${i}">${esc(t("init.btn"))}</button></li>`).join("")}</ol>
+                    </div>` : ""}
                     <label class="auth-field">${esc(t("sign.name"))}<input type="text" name="name" autocomplete="name" value="${esc(me.user?.name || "")}"></label>
                     <label class="auth-field">${esc(t("sign.titleField"))}<input type="text" name="title" autocomplete="organization-title" value="${esc(me.user?.title || "")}"></label>
                     <div class="auth-field" data-field="signature">
@@ -479,6 +508,35 @@
             </div>`;
         document.body.appendChild(overlay);
         document.body.classList.add("popup-active");
+        const form = overlay.querySelector("#signForm");
+        const msg = overlay.querySelector("#signMessage");
+
+        // Initials, page by page (Contract Builder contracts).
+        const initialed = new Set();
+        const syncInit = () => {
+            if (!k.generated) return;
+            const mark = (form.elements.initials.value.trim() || "").toUpperCase();
+            overlay.querySelectorAll("[data-init]").forEach(b => {
+                const on = initialed.has(Number(b.dataset.init));
+                b.textContent = on ? mark || t("init.done") : t("init.btn");
+                b.classList.toggle("is-initialed", on);
+                b.setAttribute("aria-pressed", String(on));
+            });
+            overlay.querySelector("#initCount").textContent = t("init.count", { n: initialed.size, total: k.pages.length });
+        };
+        overlay.addEventListener("click", ev => {
+            const b = ev.target.closest("[data-init]");
+            if (b) {
+                if (!form.elements.initials.value.trim()) { VP.markFields(form, ["initials"]); VP.setMessage(msg, t("init.needInitials"), "error"); form.elements.initials.focus(); return; }
+                const i = Number(b.dataset.init);
+                if (initialed.has(i)) initialed.delete(i); else initialed.add(i);
+                syncInit();
+                const next = overlay.querySelector(`[data-init="${i + 1}"]`);
+                if (next && initialed.has(i)) next.focus();
+                return;
+            }
+            if (ev.target.closest("[data-init-read]") && k.file) openFile(k.file.id, false);
+        });
 
         // Signature pad (mouse, pen or finger).
         const canvas = overlay.querySelector("#signPad");
@@ -505,10 +563,10 @@
         canvas.addEventListener("pointerup", stop);
         canvas.addEventListener("pointercancel", stop);
         overlay.querySelector("#signClear").addEventListener("click", () => { ctx2d.clearRect(0, 0, canvas.width, canvas.height); drawn = false; });
+        if (k.generated) { form.elements.initials.addEventListener("input", syncInit); syncInit(); }
         requestAnimationFrame(size);
 
-        const form = overlay.querySelector("#signForm");
-        const msg = overlay.querySelector("#signMessage");
+
         const close = () => {
             overlay.remove();
             if (!document.querySelector(".popup-overlay:not(.hidden)")) document.body.classList.remove("popup-active");
@@ -524,8 +582,14 @@
             ev.preventDefault();
             if (busy) return;
             const name = form.elements.name.value.trim();
-            const missing = [!name ? "name" : null, !drawn ? "signature" : null, !form.elements.agree.checked ? "agree" : null].filter(Boolean);
-            if (missing.length) { VP.markFields(form, missing); VP.setMessage(msg, t(!drawn && name ? "sign.needSignature" : "err.missing_fields"), "error"); return; }
+            const initials = k.generated ? form.elements.initials.value.trim() : "";
+            const allInit = !k.generated || initialed.size === k.pages.length;
+            const missing = [k.generated && !initials ? "initials" : null, !allInit ? "initialed" : null, !name ? "name" : null, !drawn ? "signature" : null, !form.elements.agree.checked ? "agree" : null].filter(Boolean);
+            if (missing.length) {
+                VP.markFields(form, missing);
+                VP.setMessage(msg, !allInit ? t("init.needAll", { n: k.pages.length - initialed.size }) : t(!drawn && name ? "sign.needSignature" : "err.missing_fields"), "error");
+                return;
+            }
             VP.markFields(form, []); VP.setMessage(msg, "");
             busy = true;
             const btn = overlay.querySelector("#signSubmit");
@@ -534,6 +598,7 @@
                 const res = await VP.api("vendor-api", "sign_contract", {
                     project_id: id, name, title: form.elements.title.value.trim(), agree: true,
                     signature_png: canvas.toDataURL("image/png"),
+                    ...(k.generated ? { initials, initialed: [...initialed] } : {}),
                 });
                 if (!res.ok) { VP.setMessage(msg, VP.errText(res.error), "error"); return; }
                 busy = false;
@@ -552,7 +617,7 @@
     // View opens in the portal's preview; Download saves it. Never a new tab.
     function openFile(fileId, download) {
         const p = state.project;
-        const files = [p.coi.file, p.coi_template, p.contract?.file, p.contract?.signed_file, ...p.scopes.map(sc => sc.proposal)].filter(Boolean);
+        const files = [p.coi.file, p.coi_template, p.contract?.file, p.contract?.signed_file, p.contract?.countersigned_file, ...p.scopes.map(sc => sc.proposal)].filter(Boolean);
         const f = files.find(x => String(x.id) === String(fileId));
         const name = f ? f.name : "";
         const sign = async dl => {

@@ -273,3 +273,18 @@ body.vp-noshell .main-content > .hidden { display: none !important; }
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
 }
+
+/* Contract initials, page by page (Contract Builder contracts, 2026-11-19) */
+.vp-sign-popup:has(.vp-init) { width: min(94vw, 640px); max-height: 92vh; overflow-y: auto; }
+.vp-init { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface-alt, #f7f8fb); }
+.vp-init-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.vp-init-list { list-style: none; margin: 0; padding: 0; max-height: 260px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--surface, #fff); }
+.vp-init-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 6px 12px; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+.vp-init-row:last-child { border-bottom: 0; }
+.vp-init-btn { min-width: 96px; min-height: 40px; flex: 0 0 auto; }
+.vp-init-btn.is-initialed { background: #e3f6ec; color: #1b6a44; border-color: #c4e4d0; font-weight: 800; letter-spacing: 0.04em; }
+[data-field="initialed"].field-error .vp-init-list, [data-field="initialed"].is-invalid .vp-init-list { border-color: var(--danger); }
+@media (max-width: 768px) {
+  .vp-sign-popup:has(.vp-init) { max-height: 92dvh; }
+  .vp-init-btn { min-height: 44px; }
+}
